@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Search, Clock, MapPin, GraduationCap, FileText, Download, Calendar
+  Search, Clock, MapPin, GraduationCap, FileText, Download, Calendar, Loader2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -30,6 +30,7 @@ const SLOTS = [
 ];
 
 const WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const WEEKDAY_MAP = { "Segunda": 1, "Terça": 2, "Quarta": 3, "Quinta": 4, "Sexta": 5, "Sábado": 6 }
 
 // Converte "07:30-08:20" em [hora_inicio, hora_fim] como números para comparar
 const parseSlotHours = (label) => {
@@ -71,8 +72,8 @@ export default function MapaOcupacao() {
         setCursos(resCursos || [])
 
         // Define valores padrão dos filtros com o primeiro item de cada lista
-        if (resPeriodos?.length)   setFiltroPeriodo(String(resPeriodos[0].id))
-        if (resCursos?.length)     setFiltroCurso(String(resCursos[0].id))
+        if (resPeriodos?.length)   setFiltroTurma(String(resPeriodos[0].id))
+        if (resCursos?.length)     setFiltroCurso(String(resCursos[0].id || resCursos[0]/idCurso))
       } catch (err) {
         setErro('Erro ao carregar dados. Verifique se o backend esta rodando')
         console.error(err)
@@ -152,7 +153,7 @@ export default function MapaOcupacao() {
   const RenderTabelaTurno = ({ titulo, turnoAlvo }) => {
     const slotsFiltrados = SLOTS.filter(s => s.shift === turnoAlvo);
     const cursoSelecionado = cursos.find(c => String(c.id) === filtroCurso)
-    const periodoSelecionado = periodos.find(p => String(p.id) === filtroPeriodo)
+    const periodoSelecionado = periodos.find(p => String(p.id) === filtroTurma)
 
     return (
       <div className="mb-10">
@@ -188,7 +189,7 @@ export default function MapaOcupacao() {
                         {!slot.isBreak && reserva && (
                           <div className="min-h-[70px] p-2 rounded-lg border border-blue-200 bg-blue-50">
                             <p className="text-[8px] font-black text-blue-900 uppercase tracking-tighter">
-                              {cursoSelecionado?.nome || '—'} {periodoSelecionado?.semestre || '—'}
+                              {cursoSelecionado?.nomeCurso || '—'} {periodoSelecionado?.semestre || '—'}
                             </p>
                             <p className="text-[9px] text-blue-700 font-bold mt-1">
                               {reserva.summary?.replace(/^\[.*?\]\s*/, '') || '—'}
@@ -284,7 +285,7 @@ export default function MapaOcupacao() {
               <GraduationCap size={16} className="text-slate-400" />
               <select value={filtroCurso} onChange={e => setFiltroCurso(e.target.value)} className="bg-transparent w-full outline-none">
                 {cursos.map(c => (
-                  <option key={c.id} value={String(c.id)}>{c.nome}</option>
+                  <option key={c.id || c.idCurso} value={String(c.id || c.idCurso)}>{c.nomeCurso}</option>
                 ))}
               </select>
             </div>
@@ -295,7 +296,7 @@ export default function MapaOcupacao() {
             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Período</label>
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold">
               <Calendar size={16} className="text-slate-400" />
-              <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)} className="bg-transparent w-full outline-none">
+              <select value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)} className="bg-transparent w-full outline-none">
                 {periodos.map(p => (
                   <option key={p.id} value={String(p.id)}>{p.semestre}</option>
                 ))}
