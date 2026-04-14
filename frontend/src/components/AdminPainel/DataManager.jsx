@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSchedule } from '../Schedule/ScheduleContext'
 import { Edit2, Trash2, X, Plus, Check, BookOpen, Users, Building2, GraduationCap, Calendar, ArrowLeft, Layers } from 'lucide-react'
 import api from '../../services/api'
+import { getRoomTypes } from '../../services/RoomTypeService'
 
 const inp = "w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-white text-gray-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none focus:border-indigo-400 transition-all text-sm"
 const lbl = "block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
@@ -13,7 +14,7 @@ const CONFIG = {
         fields: [
             { front: 'nome',      back: 'nomeProf',      label: 'Nome completo', type: 'text',  ph: 'Ex: João Silva' },
             { front: 'email',     back: 'emailProf',     label: 'E-mail',        type: 'email', ph: 'joao@uepa.br' },
-            { front: 'matricula', back: 'matriculaProf', label: 'Matrícula',     type: 'text',  ph: 'Ex: 123456' },
+            { front: 'matricula', back: 'matriculaProf', label: 'Matrícula / SIAPE (opcional)', type: 'text', ph: 'Ex: 123456' },
         ],
     },
     disciplinas: {
@@ -22,8 +23,7 @@ const CONFIG = {
         fields: [
             { front: 'nome',        back: 'nomeDisciplina',      label: 'Nome da disciplina', type: 'text', ph: 'Ex: Cálculo I' },
             { front: 'matricula',   back: 'matriculaDisciplina', label: 'Código/Sigla',       type: 'text', ph: 'Ex: MAT001' },
-            // NOVO CAMPO: Lista dinâmica de Cursos
-            { front: 'cursoIdFake', back: 'cursoIdFake',         label: 'Curso da Disciplina', type: 'dynamic-select', listName: 'cursos' },
+            { front: 'cursoId',     back: 'cursoId',             label: 'Curso (opcional)',   type: 'dynamic-select', listName: 'cursos' },
         ],
     },
     cursos: {
@@ -35,18 +35,20 @@ const CONFIG = {
             { front: 'cor',   back: 'corCurso',   label: 'Cor de identificação', type: 'color' },
         ],
     },
+    tiposSala: {
+        title: 'Tipos de sala', singular: 'Tipo de sala', endpoint: 'room-types', labelKey: 'nome',
+        icon: Layers, color: '#475569', colorBg: '#f1f5f9',
+        fields: [
+            { front: 'nome', back: 'nome', label: 'Nome do tipo', type: 'text', ph: 'Ex: Laboratório' },
+        ],
+    },
     salas: {
         title: 'Salas', singular: 'Sala', endpoint: 'rooms', labelKey: 'nomeSala',
         icon: Building2, color: '#059669', colorBg: '#d1fae5',
         fields: [
             { front: 'nome', back: 'nomeSala', label: 'Nome da sala', type: 'text', ph: 'Ex: 101' },
-            { front: 'tipo', back: 'tipoSalaId', label: 'Tipo', type: 'select',
-              options: [
-                  { v: '1', l: 'Laboratório' },
-                  { v: '2', l: 'Auditório' },
-                  { v: '3', l: 'Sala de Aula' },
-                  { v: '4', l: 'Sala de Estudos' }
-              ] },
+            { front: 'tipo', back: 'tipoSalaId', label: 'Tipo de sala', type: 'dynamic-select',
+              listName: 'tiposSala', listLabelKey: 'nome' },
             { front: 'capacidade', back: 'capacidade', label: 'Capacidade', type: 'number', ph: 'Ex: 40' }
         ],
     },
@@ -71,14 +73,18 @@ const ItemModal = ({ tipo, item, lists, onSave, onClose }) => {
     // Preenche os dados do modal
     cfg.fields.forEach(f => {
         let val = item?.[f.front] || item?.[f.back] || ''
-        
-        // TRUQUE: Desempacota o Curso escondido na Disciplina
-        if (tipo === 'disciplinas' && item?.matriculaDisciplina?.includes('| META:')) {
-            if (f.front === 'matricula') {
-                val = item.matriculaDisciplina.split('| META:')[0].trim();
-            }
-            if (f.front === 'cursoIdFake') {
-                try { val = JSON.parse(item.matriculaDisciplina.split('| META:')[1]).cId || ''; } catch(e){}
+
+        if (tipo === 'disciplinas' && item?.matriculaDisciplina?.includes('| META:') && f.front === 'matricula') {
+            val = item.matriculaDisciplina.split('| META:')[0].trim()
+        }
+        if (tipo === 'disciplinas' && f.front === 'cursoId') {
+            val = item?.cursoId ?? item?.fk_curso ?? ''
+            if (!val && item?.matriculaDisciplina?.includes('| META:')) {
+                try {
+                    val = JSON.parse(item.matriculaDisciplina.split('| META:')[1]).cId || ''
+                } catch {
+                    /* registro legado */
+                }
             }
         }
         initial[f.front] = val
@@ -93,12 +99,12 @@ const ItemModal = ({ tipo, item, lists, onSave, onClose }) => {
             if (data[f.front] !== undefined && data[f.front] !== '') payload[f.back] = data[f.front]
         })
 
-        // TRUQUE: Empacota o Curso na Disciplina antes de enviar para o backend
-        if (tipo === 'disciplinas' && payload.cursoIdFake) {
-            payload.matriculaDisciplina = `${payload.matriculaDisciplina || ''} | META:{"cId":"${payload.cursoIdFake}"}`
-            delete payload.cursoIdFake;
-        } else if (tipo === 'disciplinas') {
-            delete payload.cursoIdFake;
+        if (tipo === 'disciplinas') {
+            if (payload.cursoId === '' || payload.cursoId === undefined) {
+                delete payload.cursoId
+            } else {
+                payload.cursoId = Number(payload.cursoId)
+            }
         }
 
         const fallbackId = item?.id || item?.idProfessor || item?.idDisciplina || item?.idCurso || item?.idSala || item?.idPeriodo;
@@ -137,10 +143,13 @@ const ItemModal = ({ tipo, item, lists, onSave, onClose }) => {
                                 </select>
                             ) : field.type === 'dynamic-select' ? (
                                 <select className={inp} value={data[field.front]} onChange={e => set(field.front, e.target.value)}>
-                                    <option value="">Selecione o curso (Opcional)</option>
-                                    {(lists[field.listName] || []).map(o => (
-                                        <option key={o.id || o.idCurso} value={String(o.id || o.idCurso)}>{o.nomeCurso || o.siglaCurso}</option>
-                                    ))}
+                                    <option value="">Selecione...</option>
+                                    {(lists[field.listName] || []).map(o => {
+                                        const id = o.id || o.idCurso || o.idProfessor
+                                        const lblKey = field.listLabelKey || 'nomeCurso'
+                                        const label = o[lblKey] || o.nomeCurso || o.siglaCurso || o.nome || String(id)
+                                        return <option key={id} value={String(id)}>{label}</option>
+                                    })}
                                 </select>
                             ) : field.type === 'color' ? (
                                 <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
@@ -176,6 +185,7 @@ const DataManager = ({ onReturnToHorarios }) => {
     const { professores, disciplinas, cursos, salas, periodos, recarregarDados } = useSchedule()
     const [activeTab, setActiveTab] = useState('professores')
     const [modal, setModal] = useState(null)
+    const [tiposSala, setTiposSala] = useState([])
 
     const hasDraft = !!sessionStorage.getItem('scheduleFormDraft')
     const [showResumeBanner, setShowResumeBanner] = useState(false)
@@ -187,6 +197,10 @@ const DataManager = ({ onReturnToHorarios }) => {
             sessionStorage.removeItem('cadastrosTab')
             setTimeout(() => setModal({ tipo: tab, item: null }), 100)
         }
+    }, [])
+
+    useEffect(() => {
+        getRoomTypes().then(setTiposSala).catch(() => setTiposSala([]))
     }, [])
 
     const handleModalClose = () => {
@@ -203,10 +217,15 @@ const DataManager = ({ onReturnToHorarios }) => {
                 await api.post(`/${cfg.endpoint}/`, payload)
             }
             recarregarDados()
+            if (cfg.endpoint === 'room-types') {
+                getRoomTypes().then(setTiposSala).catch(() => setTiposSala([]))
+            }
             setModal(null)
             if (hasDraft) setShowResumeBanner(true)
         } catch (err) {
-            alert(err.response?.data?.message || 'Erro ao salvar. Verifique os dados.')
+            const d = err.response?.data?.detail
+            const msg = typeof d === 'string' ? d : err.response?.data?.message
+            alert(msg || 'Erro ao salvar. Verifique os dados.')
         }
     }
 
@@ -216,8 +235,13 @@ const DataManager = ({ onReturnToHorarios }) => {
         try {
             await api.delete(`/${cfg.endpoint}/${id}`)
             recarregarDados()
-        } catch {
-            alert('Erro ao excluir. Este item pode estar sendo usado em um horário.')
+            if (cfg.endpoint === 'room-types') {
+                getRoomTypes().then(setTiposSala).catch(() => setTiposSala([]))
+            }
+        } catch (err) {
+            const d = err.response?.data?.detail
+            const msg = typeof d === 'string' ? d : 'Erro ao excluir. Este item pode estar em uso.'
+            alert(msg)
         }
     }
 
@@ -232,7 +256,7 @@ const DataManager = ({ onReturnToHorarios }) => {
         setShowResumeBanner(false)
     }
 
-    const lists = { professores, disciplinas, cursos, salas, periodos }
+    const lists = { professores, disciplinas, cursos, salas, periodos, tiposSala }
     const allTabs = Object.entries(CONFIG).map(([key, c]) => ({ key, ...c }))
     const currentTab = allTabs.find(t => t.key === activeTab)
     const cfg = CONFIG[activeTab]
@@ -338,7 +362,7 @@ const DataManager = ({ onReturnToHorarios }) => {
                     ) : (
                         <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
                             {list.map(item => {
-                                // Evita exibir o código secreto de disciplina no grid
+                                // Disciplinas: código limpo (sem sufixo legado embutido no campo)
                                 let hiddenSigla = item.sigla || item.matriculaDisciplina || item.matricula || '';
                                 if (typeof hiddenSigla === 'string' && hiddenSigla.includes('| META:')) {
                                     hiddenSigla = hiddenSigla.split('| META:')[0].trim();

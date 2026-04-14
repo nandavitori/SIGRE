@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header/Header'
 import { ScheduleProvider } from './components/Schedule/ScheduleContext'
 import ScheduleViiew from './components/Schedule/ScheduleViiew'
@@ -6,7 +6,7 @@ import Footer from './components/Footer/Footer'
 import Login from './components/Login/Login'
 import Protection from './components/Protection/Protection'
 import UserView from './components/UserView/UserView'
-import { clearSession } from './services/AuthService'
+import { clearSession, fetchCurrentUser, applyUserProfile } from './services/AuthService'
 
 const getInitialRole  = () => localStorage.getItem('userRole') || null
 const getInitialAdmin = () =>
@@ -19,6 +19,26 @@ function App() {
   const [showLogin, setShowLogin] = useState(true)
 
   const isAuthenticated = userRole !== null
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (!token) return
+    fetchCurrentUser()
+      .then((me) => {
+        applyUserProfile(me)
+        const byTipo = { 1: 'aluno', 2: 'professor', 3: 'admin' }
+        const papel = me.papel || byTipo[me.tipo_usuario] || 'aluno'
+        setUserRole(papel)
+        if (papel === 'admin') setIsAdmin(true)
+      })
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          clearSession()
+          setUserRole(null)
+          setIsAdmin(false)
+        }
+      })
+  }, [])
 
   const handleSuccessLogin = (role) => {
     setUserRole(role)

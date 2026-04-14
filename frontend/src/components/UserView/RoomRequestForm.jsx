@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSchedule } from '../Schedule/ScheduleContext'
 import api from '../../services/api'
+import { fetchCurrentUser, applyUserProfile } from '../../services/AuthService'
 import {
     X, Building2, Calendar, Clock, AlignLeft,
     Users, ChevronDown, CheckCircle2, Loader2, AlertCircle
@@ -28,17 +29,33 @@ const inputClass = `
 `
 const labelClass = "block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
 
+const readonlyBoxClass = `
+    w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-100/90
+    text-gray-700 text-sm select-none cursor-default
+`
+
+/** Valor enviado em `matricula` na solicitação: aluno usa matrícula; professor prioriza SIAPE. */
+function matriculaParaSolicitacao(me, papel) {
+    const p = papel || me?.papel || 'aluno'
+    if (p === 'professor') {
+        const siape = me?.siape != null && String(me.siape).trim() !== '' ? String(me.siape).trim() : ''
+        if (siape) return siape
+        const mat = me?.matricula != null && String(me.matricula).trim() !== '' ? String(me.matricula).trim() : ''
+        return mat
+    }
+    return me?.matricula != null && String(me.matricula).trim() !== '' ? String(me.matricula).trim() : ''
+}
+
 const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
     const { salas, horarios } = useSchedule()
     const [step, setStep]           = useState(1)
     const [submitting, setSubmitting] = useState(false)
     const [conflito, setConflito]   = useState(null)
     const [error, setError]         = useState('')
+    const [locked, setLocked]       = useState(null)
+    const [loadingProfile, setLoadingProfile] = useState(true)
 
     const [form, setForm] = useState({
-        solicitante:   '',
-        email:         '',
-        matricula:     '',
         motivo:        '',
         descricao:     '',
         observacoes:   '',
@@ -49,6 +66,36 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
         horarioFim:    '',
         participantes: '',
     })
+
+    useEffect(() => {
+        let cancelled = false
+        setLoadingProfile(true)
+        ;(async () => {
+            try {
+                const me = await fetchCurrentUser()
+                if (cancelled) return
+                applyUserProfile(me)
+                const papelEfetivo = userRole || me.papel || 'aluno'
+                setLocked({
+                    solicitante: me.nome || '',
+                    email:       me.email || '',
+                    matricula:   matriculaParaSolicitacao(me, papelEfetivo),
+                })
+            } catch {
+                if (cancelled) return
+                const nome = localStorage.getItem('userName') || ''
+                const email = localStorage.getItem('userEmail') || ''
+                const matAluno = localStorage.getItem('userMatricula') || ''
+                const siape = localStorage.getItem('userSiape') || ''
+                const idDoc =
+                    userRole === 'professor' ? (siape || matAluno) : matAluno
+                setLocked({ solicitante: nome, email, matricula: idDoc })
+            } finally {
+                if (!cancelled) setLoadingProfile(false)
+            }
+        })()
+        return () => { cancelled = true }
+    }, [userRole])
 
     const set = (field, value) => {
         setForm(prev => ({ ...prev, [field]: value }))
@@ -70,6 +117,10 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (!locked || !String(locked.matricula || '').trim()) {
+            alert('Matrícula ou SIAPE não consta no seu perfil. Solicite ao administrador que complete seu cadastro.')
+            return
+        }
         if (form.horarioInicio >= form.horarioFim) {
             alert('O horário de término deve ser maior que o de início.')
             return
@@ -80,9 +131,9 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
         setError('')
         try {
             const payload = {
-                solicitante:   form.solicitante,
-                email:         form.email,
-                matricula:     form.matricula,
+                solicitante:   locked.solicitante,
+                email:         locked.email,
+                matricula:     locked.matricula,
                 papel:         userRole || 'aluno',
                 motivo:        MOTIVOS.find(m => m.value === form.motivo)?.label || form.motivo,
                 descricao:     form.descricao,
@@ -122,7 +173,7 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                         Sua solicitação para a <strong className="text-gray-700">{salaSelecionada?.nome || 'sala'}</strong> foi registrada.
                     </p>
                     <p className="text-gray-400 text-xs mb-8">
-                        A assessoria pedagógica analisará e entrará em contato pelo e-mail <strong>{form.email}</strong>.
+                        A assessoria pedagógica analisará e entrará em contato pelo e-mail <strong>{locked?.email || ''}</strong>.
                     </p>
                     <div className="bg-gray-50 rounded-2xl p-4 mb-8 text-left space-y-2">
                         <Row label="Motivo"  value={MOTIVOS.find(m => m.value === form.motivo)?.label} />
@@ -170,28 +221,46 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                 <div className="overflow-y-auto flex-1 px-8 py-6">
                     <form id="room-request-form" onSubmit={handleSubmit} className="space-y-6">
 
-                        {/* Seção 1: Identificação */}
+                        {/* Seção 1: Identificação (somente leitura — perfil logado) */}
                         <Section title="Identificação" icon={<Users size={15} />}>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="sm:col-span-2">
-                                    <label className={labelClass}>Nome completo *</label>
-                                    <input className={inputClass} type="text" required
-                                        placeholder="Seu nome completo"
-                                        value={form.solicitante} onChange={e => set('solicitante', e.target.value)} />
+                            <p className="text-xs text-gray-500 mb-3">
+                                Nome, e-mail e {userRole === 'professor' ? 'SIAPE' : 'matrícula'} vêm do seu cadastro e não podem ser alterados neste formulário.
+                            </p>
+                            {loadingProfile ? (
+                                <div className="flex items-center justify-center gap-2 py-10 text-gray-500 text-sm">
+                                    <Loader2 size={18} className="animate-spin" /> Carregando seu perfil…
                                 </div>
-                                <div>
-                                    <label className={labelClass}>E-mail *</label>
-                                    <input className={inputClass} type="email" required
-                                        placeholder="seu@uepa.br"
-                                        value={form.email} onChange={e => set('email', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Matrícula *</label>
-                                    <input className={inputClass} type="text" required
-                                        placeholder="Ex: 2023001"
-                                        value={form.matricula} onChange={e => set('matricula', e.target.value)} />
-                                </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="sm:col-span-2">
+                                            <label className={labelClass}>Nome completo</label>
+                                            <div className={readonlyBoxClass}>{locked?.solicitante || '—'}</div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>E-mail</label>
+                                            <div className={readonlyBoxClass}>{locked?.email || '—'}</div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>
+                                                {userRole === 'professor' ? 'SIAPE' : 'Matrícula'}
+                                            </label>
+                                            <div className={readonlyBoxClass}>
+                                                {locked?.matricula?.trim() ? locked.matricula : '—'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {locked && !String(locked.matricula || '').trim() && (
+                                        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                                            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                            <p>
+                                                Sem matrícula ou SIAPE no perfil não é possível enviar a solicitação.
+                                                Peça ao administrador para completar seus dados na aba <strong>Usuários</strong>.
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </Section>
 
                         {/* Seção 2: Evento */}
@@ -322,7 +391,14 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                             className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-100 transition-colors">
                             Cancelar
                         </button>
-                        <button type="submit" form="room-request-form" disabled={submitting || !form.motivo}
+                        <button type="submit" form="room-request-form"
+                            disabled={
+                                submitting ||
+                                !form.motivo ||
+                                loadingProfile ||
+                                !locked ||
+                                !String(locked.matricula || '').trim()
+                            }
                             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
                             style={{ background: 'linear-gradient(135deg, #1c1aa3, #7c3aed)', boxShadow: '0 6px 20px rgba(28,26,163,0.35)' }}>
                             {submitting

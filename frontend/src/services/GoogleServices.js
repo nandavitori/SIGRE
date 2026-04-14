@@ -1,7 +1,17 @@
 import api from "./api"
 
-export const getGoogleConnectUrl = () => {
-    return `${api.defaults.baseURL}/google/connect`
+/**
+ * Inicia OAuth Google Calendar: GET autenticado → recebe { auth_url } → redireciona o navegador.
+ * Não use <a href=".../google/connect"> (não envia Bearer).
+ */
+export const startGoogleCalendarConnect = async () => {
+    const res = await api.get("/google/connect")
+    const url = res.data?.auth_url
+    if (!url) {
+        const err = res.data?.detail || "Resposta sem auth_url"
+        throw new Error(typeof err === "string" ? err : JSON.stringify(err))
+    }
+    window.location.href = url
 }
 
 /**

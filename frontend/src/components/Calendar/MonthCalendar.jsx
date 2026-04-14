@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSchedule } from '../Schedule/ScheduleContext'
+import { getCalendarEvents } from '../../services/GoogleServices'
 import {
     ChevronLeft, ChevronRight, Building2, X,
     CheckCircle2, XCircle, Clock, BookOpen, User
@@ -51,6 +52,14 @@ const MonthCalendar = () => {
     const [viewMonth, setViewMonth] = useState(today.getMonth())
     const [selectedDate, setSelectedDate] = useState(null)
     const [filterSala, setFilterSala] = useState('')
+    const [googleEventCount, setGoogleEventCount] = useState(null)
+
+    useEffect(() => {
+        const anchor = new Date(viewYear, viewMonth, 15)
+        getCalendarEvents({ view: 'month', anchor: anchor.toISOString() })
+            .then((r) => setGoogleEventCount(Array.isArray(r.items) ? r.items.length : 0))
+            .catch(() => setGoogleEventCount(null))
+    }, [viewYear, viewMonth])
 
     // Navegar mês
     const prevMonth = () => {
@@ -143,6 +152,11 @@ const MonthCalendar = () => {
                 <div>
                     <h2 className="text-xl font-black text-white">Calendário de Ocupação</h2>
                     <p className="text-blue-200 text-xs mt-0.5">Disponibilidade mensal das salas</p>
+                    {googleEventCount !== null && (
+                        <p className="text-emerald-200 text-[10px] mt-1 font-semibold">
+                            Google Calendar: {googleEventCount} evento(s) SIGRE neste mês (conta conectada).
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
