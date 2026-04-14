@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -13,8 +14,6 @@ class SolicitationService(BaseService[Solicitacao]):
         super().__init__(solicitation_repository)
 
     def create_solicitation(self, db: Session, data: SolicitationCreate) -> Solicitacao:
-        # Validar se a sala existe
-        from app.models.room import Sala
         room = db.query(Sala).filter(Sala.id == data.salaId).first()
         if not room:
             raise HTTPException(status_code=404, detail="Sala não encontrada.")

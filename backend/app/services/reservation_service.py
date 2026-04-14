@@ -17,6 +17,7 @@ from app.services import google_calendar
 from app.services.datetime_utils import ensure_utc, ensure_app_timezone, from_storage_datetime, to_storage_datetime
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
 from app.services.base_service import BaseService
+from app.services.rbac import ROLE_ADMIN
 
 # Dias como no frontend (Segunda–Sábado); Python weekday: Segunda=0 … Domingo=6
 _DIA_SEMANA_PARA_WEEKDAY = {
@@ -250,6 +251,23 @@ class AllocationService(BaseService[Alocacao]):
                 detail="Falha ao criar evento no Google Calendar (resposta sem id).",
             )
         return str(created["id"])
+
+    def _sync_google_delete(self, db: Session, alocacao: Alocacao, current_user):
+        """
+        Busca o evento no Google Calendar pelo ID local e o remove.
+        """
+        start_dt = ensure_utc(alocacao.dia_horario_inicio)
+        end_dt = ensure_utc(alocacao.dia_horario_saida)
+        
+        events = list_events(db, current_user.id, start_dt, end_dt)
+        if not events:
+            return
+
+        for ev in events:
+            priv = (ev.get("extendedProperties") or {}).get("private") or {}
+            if str(priv.get("local_reservation_id")) == str(alocacao.id):
+                delete_event(db, current_user.id, ev["id"])
+                print(f"DEBUG: Evento Google {ev['id']} removido para alocação {alocacao.id}")
 
     def approve_reservation(self, db: Session, reservation_id: int, current_user) -> dict:
         alocacao = self.repository.get_by_id(db, reservation_id)

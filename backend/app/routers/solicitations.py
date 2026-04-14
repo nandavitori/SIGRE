@@ -22,6 +22,7 @@ def list_mine(
     """Lista solicitações do usuário autenticado (e-mail do token)."""
     return solicitation_service.list_my_solicitations(db, current.email)
 
+
 @router.patch("/{id}/status", response_model=SolicitationOut)
 def update_status(
     id: int,
