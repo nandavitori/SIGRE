@@ -1,5 +1,39 @@
 import api from './api'
 
+const ROLE_BY_TIPO = { 1: 'aluno', 2: 'professor', 3: 'admin' }
+
+/**
+ * Perfil do usuário autenticado — GET /users/me
+ */
+export const fetchCurrentUser = async () => {
+  const res = await api.get('/users/me')
+  return res.data
+}
+
+/**
+ * Sincroniza localStorage com o retorno de /users/me (fonte de verdade pós-login).
+ */
+export const applyUserProfile = (me) => {
+  if (!me) return
+  localStorage.setItem('userName', me.nome ?? '')
+  localStorage.setItem('userEmail', me.email ?? '')
+  localStorage.setItem('userId', String(me.id ?? ''))
+  const papel = me.papel ?? ROLE_BY_TIPO[me.tipo_usuario] ?? 'aluno'
+  localStorage.setItem('userRole', papel)
+  if (papel === 'admin') {
+    localStorage.setItem('isAdminAuthenticated', 'true')
+  }
+  localStorage.setItem('adminUser', me.nome ?? 'Admin')
+
+  const mat = me.matricula != null && String(me.matricula).trim() !== '' ? String(me.matricula).trim() : ''
+  if (mat) localStorage.setItem('userMatricula', mat)
+  else localStorage.removeItem('userMatricula')
+
+  const sia = me.siape != null && String(me.siape).trim() !== '' ? String(me.siape).trim() : ''
+  if (sia) localStorage.setItem('userSiape', sia)
+  else localStorage.removeItem('userSiape')
+}
+
 /**
  * Login — POST /auth/login
  * Envia: { username, senha }
@@ -45,4 +79,8 @@ export const clearSession = () => {
   localStorage.removeItem('userName')
   localStorage.removeItem('userEmail')
   localStorage.removeItem('userId')
+  localStorage.removeItem('isAdminAuthenticated')
+  localStorage.removeItem('adminUser')
+  localStorage.removeItem('userMatricula')
+  localStorage.removeItem('userSiape')
 }

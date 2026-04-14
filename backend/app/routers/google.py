@@ -48,13 +48,10 @@ def google_connect(
     )
     
     request.session["oauth_state"] = state
-    request.session["oauth_user_id"] = current.id  
-    
-    print(f"DEBUG: Session set in /connect - state: {state}, user_id: {current.id}")
-    
-    return {
-        "auth_url": auth_url
-    }
+    request.session["oauth_user_id"] = current.id
+
+    # JSON para o SPA enviar Authorization e depois redirecionar (evita <a href> sem Bearer).
+    return {"auth_url": auth_url}
 
 
 @router.get("/callback")
@@ -117,9 +114,9 @@ def google_callback(
     row.updated_at = datetime.now(tz=timezone.utc)
     
     db.commit()
-    
-    frontend_url = f"{settings.FRONTEND_URL}?tab=configuracoes"
-    return RedirectResponse(url=frontend_url)
+
+    base = (settings.FRONTEND_PUBLIC_URL or "http://localhost:8080").rstrip("/")
+    return RedirectResponse(url=f"{base}/?google=connected", status_code=302)
 
 
 @router.get("/status")

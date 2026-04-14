@@ -35,12 +35,10 @@ const UserView = ({ userRole, onLogOut }) => {
     const pendentes = solicitacoes.filter(s => s.status === 'pendente').length
 
     const carregarSolicitacoes = async () => {
-        if (!userEmail) return
+        if (!localStorage.getItem('access_token')) return
         setLoading(true)
         try {
-            const res = await api.get('/solicitations/mine', {
-                params: { email: userEmail }
-            })
+            const res = await api.get('/solicitations/mine')
             setSolicitacoes(res.data.map(formatSolicitacao))
         } catch (err) {
             console.error('Erro ao carregar solicitações:', err)

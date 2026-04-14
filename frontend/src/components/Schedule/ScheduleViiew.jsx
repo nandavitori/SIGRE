@@ -107,7 +107,7 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                             {cursos.map(curso => (
                                 <div key={curso.id} className='flex items-center gap-2'>
                                     <div className='w-4 h-4 rounded' style={{ backgroundColor: curso.cor }} />
-                                    <span className='text-sm text-gray-700'>{curso.sigla} — {curso.nome}</span>
+                                    <span className='text-sm text-gray-700'>{curso.siglaCurso || curso.sigla} — {curso.nomeCurso || curso.nome}</span>
                                 </div>
                             ))}
                         </div>

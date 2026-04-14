@@ -6,7 +6,7 @@ import {
 import logo from '../../assets/logouepa.png'
 
 // ── Services ──────────────────────────────────────────────────────────────────
-import { login, register, saveSession } from '../../services/AuthService'
+import { login, register, saveSession, fetchCurrentUser, applyUserProfile } from '../../services/AuthService'
 import { getCursos } from '../../services/CouserService'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -71,8 +71,18 @@ const Login = ({ onLoginSuccess }) => {
                 return
             }
 
-            // Salva sessão (token JWT + dados do usuário)
             saveSession(userData)
+            try {
+                const me = await fetchCurrentUser()
+                applyUserProfile(me)
+            } catch {
+                applyUserProfile({
+                    id: userData.id,
+                    nome: userData.nome,
+                    email: userData.email,
+                    papel: userData.papel,
+                })
+            }
             onLoginSuccess(userData.papel)
 
         } catch (err) {

@@ -3,6 +3,48 @@ import api from '../../services/api';
 
 export const ScheduleContext = createContext();
 
+function datePart(isoOrDate) {
+    if (!isoOrDate) return '';
+    const s = String(isoOrDate);
+    return s.includes('T') ? s.split('T')[0] : s.slice(0, 10);
+}
+
+/** Monta corpo de criação/atualização de reserva alinhado ao backend (Pydantic). */
+function buildReservationApiPayload(disciplinas, professores, d) {
+    const uid = Number(localStorage.getItem('userId'));
+    const ds = datePart(d.dataInicio);
+    const de = datePart(d.dataFim);
+    const startLocal = `${ds}T${d.horarioInicio}:00`;
+    const endLocal = `${de}T${d.horarioFim}:00`;
+    const disc = disciplinas.find(x => x.id === d.disciplinaId);
+    const prof = professores.find(x => x.id === d.professorId);
+    const discNome = disc?.nomeDisciplina || 'Alocação';
+    const profNome = prof?.nomeProf || '';
+    return {
+        fk_usuario: uid,
+        salaId: d.salaId,
+        professorId: d.professorId,
+        disciplinaId: d.disciplinaId,
+        cursoId: d.cursoId,
+        periodoId: d.periodoId,
+        tipo: 'AULA',
+        dia_horario_inicio: new Date(startLocal).toISOString(),
+        dia_horario_saida: new Date(endLocal).toISOString(),
+        diaSemana: d.diaSemana,
+        dataInicio: new Date(startLocal).toISOString(),
+        dataFim: new Date(endLocal).toISOString(),
+        uso: discNome,
+        justificativa: profNome ? `${discNome} — ${profNome}` : discNome,
+        status: 'APPROVED',
+    };
+}
+
+function buildReservationPatchPayload(disciplinas, professores, d) {
+    const base = buildReservationApiPayload(disciplinas, professores, d);
+    const { fk_usuario, status, ...rest } = base;
+    return rest;
+}
+
 export const useSchedule = () => {
     const context = useContext(ScheduleContext);
     if (!context) throw new Error('useSchedule deve ser usado dentro de ScheduleProvider');
@@ -107,8 +149,13 @@ export const ScheduleProvider = ({ children }) => {
 
     const adicionarHorario = async (novoHorario) => {
         try {
-            await api.post('/reservations/', novoHorario);
-            recarregarDados(); 
+            const body = buildReservationApiPayload(disciplinas, professores, novoHorario);
+            if (!body.fk_usuario) {
+                alert('Sessão inválida: faça login novamente.');
+                return;
+            }
+            await api.post('/reservations/', body);
+            recarregarDados();
             alert("Horário salvo!");
         } catch (error) {
             console.error(error); alert("Erro ao salvar horário.");
@@ -117,8 +164,9 @@ export const ScheduleProvider = ({ children }) => {
 
     const atualizarHorario = async (id, dados) => {
         try {
-            // Nota: Precisamos verificar se o endpoint de update existe ou usar POST/PATCH
-            await api.patch(`/reservations/${id}`, dados);
+            const baseId = String(id).split(':')[0];
+            const body = buildReservationPatchPayload(disciplinas, professores, dados);
+            await api.patch(`/reservations/${baseId}`, body);
             recarregarDados();
             alert("Horário atualizado!");
         } catch (error) { console.error(error); alert("Erro ao atualizar."); }

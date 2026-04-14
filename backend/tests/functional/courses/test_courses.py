@@ -25,9 +25,10 @@ def test_list_courses(client, admin_token_headers):
     assert isinstance(response.json(), list)
     assert len(response.json()) >= 1
 
-def test_list_courses_unauthorized(client):
+def test_list_courses_public(client):
     response = client.get("/courses/")
-    assert response.status_code == 401
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 
 def test_update_course(client, admin_token_headers, db_session):
     # Model uses 'sigla'

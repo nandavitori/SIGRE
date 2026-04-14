@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import api from '../../services/api'
 import { useSchedule } from '../Schedule/ScheduleContext'
+import { getDashboardMetrics } from '../../services/DashboardService'
+import { startGoogleCalendarConnect } from '../../services/GoogleServices'
 import {
     Plus, LayoutGrid, ClipboardList, Calendar, Database,
     CheckCircle2, XCircle, Clock, Building2, User, Users,
@@ -106,6 +108,7 @@ const AdminPainel = () => {
     const [motivoRecusa, setMotivoRecusa] = useState({})
 
     const [usuarios, setUsuarios] = useState([])
+    const [metrics, setMetrics] = useState(null)
 
     const [modalConfirmDisconnect, setModalConfirmDisconnect] = useState(false)
     const [modalFeedback, setModalFeedback] = useState({ show: false, title: '', message: '', type: 'info' })
@@ -155,6 +158,12 @@ const AdminPainel = () => {
         carregarSolicitacoes()
         carregarUsuarios()
         checkGoogleStatus()
+    }, [])
+
+    useEffect(() => {
+        getDashboardMetrics()
+            .then(setMetrics)
+            .catch(() => setMetrics(null))
     }, [])
 
     // ── Handlers de Usuários (Passados para UserManagement) ──
@@ -343,15 +352,59 @@ const AdminPainel = () => {
                 {activeTab === 'mapa' && <MapaOcupacao />}
 
                 {activeTab === 'usuarios' && (
-                    <UserManagement
-                        usuarios={usuarios}
-                        onAprovar={handleAprovarUsuario}
-                        onRecusar={handleRecusarUsuario}
+                    <UserManagement 
+                        usuarios={usuarios} 
+                        onAprovar={handleAprovarUsuario} 
+                        onRecusar={handleRecusarUsuario} 
                         onDeletar={handleDeletarUsuario}
+                        onUsuarioCriado={carregarUsuarios}
                     />
                 )}
 
-                {activeTab === 'horarios' && <ScheduleViiew isAdmin={true} />}
+                {activeTab === 'horarios' && (
+                    <div className="space-y-6">
+                        {metrics && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Alocações</p>
+                                    <p className="text-2xl font-black text-gray-900">{metrics.total ?? 0}</p>
+                                </div>
+                                {Object.entries(metrics.status || {}).slice(0, 3).map(([k, v]) => (
+                                    <div key={k} className="rounded-xl border border-gray-100 bg-white p-4">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">{k || '—'}</p>
+                                        <p className="text-2xl font-black text-indigo-900">{v}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-950 space-y-2">
+                            <p className="font-bold text-indigo-900">Registrar aulas e ocupação de salas</p>
+                            <ul className="list-disc pl-5 text-xs text-indigo-900/85 leading-relaxed space-y-1">
+                                <li>
+                                    <strong>Novo horário</strong> abre o assistente completo (período, sala, disciplina, professor e curso), igual à lógica usada na grade.
+                                </li>
+                                <li>
+                                    Na aba <strong>Grade</strong> você preenche a ocupação por turnos e horários — útil para montar várias aulas na mesma sala em sequência.
+                                </li>
+                                <li>
+                                    Pedidos de espaço feitos por alunos ou professores aparecem em <strong>Solicitações</strong> para aprovação ou recusa.
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-end">
+                            <button type="button" onClick={() => setActiveTab('mapa')}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-indigo-200 bg-white text-indigo-800 hover:bg-indigo-50 transition-colors">
+                                <LayoutGrid size={16} /> Abrir grade de ocupação
+                            </button>
+                            <button type="button" onClick={() => { setHorarioEdit(null); setShowForm(true) }}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-95 transition-opacity"
+                                style={{ background: 'linear-gradient(135deg,#1c1aa3,#4f46e5)' }}>
+                                <Plus size={16} /> Novo horário
+                            </button>
+                        </div>
+                        <ScheduleViiew isAdmin={true} />
+                    </div>
+                )}
 
                 {activeTab === 'solicitacoes' && (
                     <div className="animate-in fade-in duration-500">
@@ -402,7 +455,28 @@ const AdminPainel = () => {
                     </div>
                 )}
 
-                {activeTab === 'calendario' && <MonthCalendar />}
+                {activeTab === 'calendario' && (
+                    <div className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                            <p className="text-sm text-blue-900 font-medium">
+                                Sincronize reservas aprovadas com sua agenda Google (use credenciais reais no .env do backend).
+                            </p>
+                            <button type="button"
+                                onClick={async () => {
+                                    try {
+                                        await startGoogleCalendarConnect()
+                                    } catch (e) {
+                                        const msg = e?.response?.data?.detail ?? e?.message ?? 'Falha ao conectar'
+                                        alert(typeof msg === 'string' ? msg : 'Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no servidor.')
+                                    }
+                                }}
+                                className="shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
+                                Conectar Google Calendar
+                            </button>
+                        </div>
+                        <MonthCalendar />
+                    </div>
+                )}
                 {activeTab === 'cadastros' && <DataManager />}
 
                 {activeTab === 'configuracoes' && (
@@ -520,6 +594,33 @@ const AdminPainel = () => {
             </div>
 
             {showImport && <ImportarPlanilha onClose={() => setShowImport(false)} />}
+
+            {showForm && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto"
+                    style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)' }}>
+                    <div className="w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+                        <ScheduleForm
+                            horarioEdit={horarioEdit}
+                            restoreDraft={false}
+                            onGoToCadastros={(tab) => {
+                                sessionStorage.setItem('cadastrosTab', tab)
+                                setActiveTab('cadastros')
+                                setShowForm(false)
+                            }}
+                            onCancel={() => { setShowForm(false); setHorarioEdit(null) }}
+                            onSave={async (data) => {
+                                if (horarioEdit?.id) {
+                                    await atualizarHorario(horarioEdit.id, data)
+                                } else {
+                                    await adicionarHorario(data)
+                                }
+                                setShowForm(false)
+                                setHorarioEdit(null)
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

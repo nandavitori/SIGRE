@@ -132,7 +132,7 @@ export function generateICS(horarios, salas, cursos, calName = 'SCA UEPA — Hor
         const location = escapeICS(sala?.nome || '')
         const desc     = escapeICS([
             h.professor  ? `Professor: ${h.professor}`   : '',
-            curso        ? `Curso: ${curso.nome} (${curso.sigla})` : '',
+            curso        ? `Curso: ${curso.nomeCurso || curso.nome} (${curso.siglaCurso || curso.sigla})` : '',
             sala         ? `Sala: ${sala.nome} — ${sala.tipo}`     : '',
             h.semestre   ? `Semestre: ${h.semestre}`     : '',
         ].filter(Boolean).join('\\n'))
@@ -146,7 +146,8 @@ export function generateICS(horarios, salas, cursos, calName = 'SCA UEPA — Hor
         lines.push(foldLine(`SUMMARY:${summary}`))
         if (location) lines.push(foldLine(`LOCATION:${location}`))
         if (desc)     lines.push(foldLine(`DESCRIPTION:${desc}`))
-        if (curso?.cor) lines.push(`COLOR:${curso.cor}`)
+        const corCurso = curso?.corCurso || curso?.cor
+        if (corCurso) lines.push(`COLOR:${corCurso}`)
         lines.push('END:VEVENT')
     }
 

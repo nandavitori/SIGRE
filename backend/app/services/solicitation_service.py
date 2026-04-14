@@ -3,13 +3,11 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.solicitation import Solicitacao
+from app.models.user import Usuario
 from app.repositories.solicitation_repository import solicitation_repository
 from app.schemas.solicitation import SolicitationCreate, SolicitationUpdateStatus
 from app.services.base_service import BaseService
 from app.services.reservation_service import allocation_service
-from app.models.user import Usuario
-from app.schemas.reservation import ReservationCreate
-from app.models.room import Sala
 
 class SolicitationService(BaseService[Solicitacao]):
     def __init__(self):
@@ -42,39 +40,28 @@ class SolicitationService(BaseService[Solicitacao]):
     def list_my_solicitations(self, db: Session, email: str) -> List[Solicitacao]:
         return self.repository.list_by_email(db, email)
 
-    def update_status(self, db: Session, id: int, payload: SolicitationUpdateStatus, current_user) -> Solicitacao:
+    def update_status(self, db: Session, id: int, payload: SolicitationUpdateStatus, admin_user: Usuario) -> Solicitacao:
         solicitacao = self.repository.get_by_id(db, id)
         if not solicitacao:
             raise HTTPException(status_code=404, detail="Solicitação não encontrada")
-        
-        update_data = {"status": payload.status}
-        if payload.motivoRecusa:
-            update_data["motivo_recusa"] = payload.motivoRecusa
-            
-        updated = self.repository.update(db, solicitacao, update_data)
 
-        if payload.status == "aprovado":
-            requester = db.query(Usuario).filter(Usuario.email == solicitacao.email).first()
-            user_id = requester.id if requester else current_user.id
+        status_new = (payload.status or "").strip().lower()
 
-            base_date = solicitacao.data_evento or datetime.now().date()
-            start_dt = datetime.combine(base_date, solicitacao.horario_inicio)
-            end_dt = datetime.combine(base_date, solicitacao.horario_fim)
-
-            res_payload = ReservationCreate(
-                fk_usuario=user_id,
-                fk_sala=solicitacao.fk_sala,
-                fk_curso=solicitacao.fk_curso,
-                tipo=solicitacao.motivo,
-                dia_horario_inicio=start_dt,
-                dia_horario_saida=end_dt,
-                uso=solicitacao.descricao,
-                justificativa=solicitacao.observacoes or "",
-                status="APPROVED"
+        if status_new == "aprovado":
+            if (solicitacao.status or "").lower() != "pendente":
+                raise HTTPException(status_code=400, detail="Só é possível aprovar solicitações pendentes.")
+            if getattr(solicitacao, "fk_alocacao", None):
+                raise HTTPException(status_code=400, detail="Esta solicitação já foi convertida em alocação.")
+            aloc_id = allocation_service.create_allocation_from_approved_solicitation(
+                db, solicitacao, admin_user
             )
-            
-            allocation_service.create_reservation(db, res_payload, current_user)
+            return self.repository.update(
+                db, solicitacao, {"status": "aprovado", "fk_alocacao": aloc_id}
+            )
 
-        return updated
+        update_data: dict = {"status": status_new}
+        if payload.motivoRecusa is not None:
+            update_data["motivo_recusa"] = payload.motivoRecusa
+        return self.repository.update(db, solicitacao, update_data)
 
 solicitation_service = SolicitationService()
