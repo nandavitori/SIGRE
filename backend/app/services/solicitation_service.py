@@ -7,6 +7,7 @@ from app.models.user import Usuario
 from app.repositories.solicitation_repository import solicitation_repository
 from app.schemas.solicitation import SolicitationCreate, SolicitationUpdateStatus
 from app.services.base_service import BaseService
+from app.models.room import Sala
 from app.services.reservation_service import allocation_service
 
 class SolicitationService(BaseService[Solicitacao]):

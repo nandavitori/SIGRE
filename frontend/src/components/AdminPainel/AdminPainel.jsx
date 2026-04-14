@@ -27,6 +27,8 @@ const STATUS_STYLES = {
 
 const AdminPainel = () => {
     const [showImport, setShowImport] = useState(false)
+    const [showForm, setShowForm] = useState(false)
+    const [horarioEdit, setHorarioEdit] = useState(null)
     const [activeTab, setActiveTab] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         return params.get('tab') || 'horarios';
