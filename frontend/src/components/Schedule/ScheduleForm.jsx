@@ -18,12 +18,12 @@ const STEPS = [
 ]
 
 const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreDraft }) => {
-    const { cursos, salas, periodos, professores, disciplinas } = useSchedule()
+    const { cursos, salas, periodos, professores, disciplinas, periodoAtivo } = useSchedule()
     const [step, setStep] = useState(1)
     const [isSaving, setIsSaving] = useState(false)
     const [errors, setErrors] = useState({})
     const [form, setForm] = useState({
-        periodoId: '', dataInicio: '', dataFim: '',
+        periodoId: String(periodoAtivo || ''), dataInicio: '', dataFim: '',
         diaSemana: '', horarioInicio: '', horarioFim: '',
         salaId: '', disciplinaId: '', cursoId: '', professorId: '',
     })
@@ -41,7 +41,13 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
             sessionStorage.removeItem('scheduleFormDraft')
             sessionStorage.removeItem('scheduleFormStep')
         }
-    }, [restoreDraft])
+    }, [restoreDraft, horarioEdit, form.periodoId])
+
+    useEffect(() => {
+        if (!horarioEdit && periodoAtivo && !form.periodoId) {
+            set('periodoId', String(periodoAtivo))
+        }
+    }, [periodoAtivo, horarioEdit])
 
     useEffect(() => {
         if (horarioEdit) {
@@ -70,12 +76,6 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
         })
     }
 
-    const handlePeriodo = (id) => {
-        const p = periodos.find(p => p.id === parseInt(id))
-        setForm(f => ({ ...f, periodoId: id, dataInicio: p?.dataInicio || '', dataFim: p?.dataFim || '' }))
-        setErrors({})
-    }
-
     // Salva rascunho e redireciona para Cadastros na aba correta
     const handleGoTo = (tab) => {
         sessionStorage.setItem('scheduleFormDraft', JSON.stringify(form))
@@ -86,7 +86,6 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
     const validateStep = (s) => {
         const newErrors = {}
         if (s === 1) {
-            if (!form.periodoId) newErrors.periodoId = 'Selecione o período letivo'
             if (!form.diaSemana) newErrors.diaSemana = 'Selecione o dia da semana'
             if (!form.horarioInicio) newErrors.horarioInicio = 'Obrigatório'
             if (!form.horarioFim) newErrors.horarioFim = 'Obrigatório'
@@ -113,11 +112,6 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
 
     const handleNext = () => {
         if (validateStep(step)) setStep(s => s + 1)
-    }
-
-    const canNext = () => {
-        // Agora canNext não bloqueia o clique, mas o handleNext valida
-        return true
     }
 
     const handleSubmit = async () => {
@@ -223,17 +217,6 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
             <div className="bg-white px-8 py-8 space-y-6">
 
                 {step === 1 && <>
-                    <div>
-                        <label className={lbl}>Período letivo</label>
-                        <div className="flex gap-2">
-                            <select className={inp + hasErr('periodoId')} value={form.periodoId} onChange={e => handlePeriodo(e.target.value)}>
-                                <option value="">Selecione o período...</option>
-                                {periodos.map(p => <option key={p.id} value={p.id}>{p.semestre} — {p.descricao}</option>)}
-                            </select>
-                            <CadastrarBtn label="Cadastrar período" tab="periodos" />
-                        </div>
-                        {errHint('periodoId')}
-                    </div>
                     <div className="grid grid-cols-2 gap-5">
                         <div>
                             <label className={lbl}>Data de início</label>

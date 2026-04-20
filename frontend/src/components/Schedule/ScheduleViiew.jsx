@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { useSchedule } from './ScheduleContext'
-import Filters from '../Filtros/Filters'
-import ScheduleGridBySala from './ScheduleGridBySala'
 import MonthCalendar from '../Calendar/MonthCalendar'
 import ExportICSModal from '../Calendar/ExportICSModal'
-import { Calendar, LayoutGrid, Download } from 'lucide-react'
+import MapaOcupacao from '../MapaOcupacao/MapaOcupacao'
+import { Calendar, Download, FileText, X } from 'lucide-react'
 
-const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
-    const { cursos, salas, periodos, periodoAtivo, setPeriodoAtivo } = useSchedule()
-    const [filters, setFilters]       = useState({ cursoId: '', salaId: '', diaSemana: '' })
-    const [viewMode, setViewMode]     = useState('grade') // 'grade' | 'calendario'
+const ScheduleViiew = ({ isAdmin = false }) => {
+    const { cursos, periodos, periodoAtivo } = useSchedule()
     const [showExport, setShowExport] = useState(false)
+    const [showMapa, setShowMapa]     = useState(false)
 
     const periodoAtual = periodos.find(p => p.id === periodoAtivo)
 
@@ -28,13 +26,13 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                 <div>
                     <h2 className='text-3xl font-bold text-gray-900 mb-2'>Grade de Horários</h2>
                     <p className='text-gray-600'>
-                        Visualize os horários das aulas por curso, sala ou dia da semana
+                        Visualize os horários das aulas e ocupação do campus
                     </p>
                     {periodoAtual && (
                         <div className='flex items-center gap-2 mt-3 text-sm'>
                             <Calendar size={16} className='text-blue-600' />
                             <span className='font-semibold text-gray-600'>
-                                Período: {formatarData(periodoAtual.dataInicio)} a {formatarData(periodoAtual.dataFim)}
+                                Período Ativo: {formatarData(periodoAtual.dataInicio)} a {formatarData(periodoAtual.dataFim)}
                             </span>
                             <span className='text-gray-400'>•</span>
                             <span className='text-gray-600'>{periodoAtual.descricao}</span>
@@ -54,80 +52,55 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                         Exportar .ics
                     </button>
                    )}
-
-                    {/* Seletor de período */}
-                    {periodos.length > 0 && (
-                        <select
-                            value={periodoAtivo}
-                            onChange={e => setPeriodoAtivo(parseInt(e.target.value))}
-                            className='px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm'
-                        >
-                            {periodos.map(periodo => (
-                                <option value={periodo.id} key={periodo.id}>
-                                    {formatarData(periodo.dataInicio)} a {formatarData(periodo.dataFim)} — {periodo.descricao}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                   <button
+                        onClick={() => setShowMapa(true)}
+                        className='flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-indigo-600 text-indigo-600 bg-indigo-50'
+                    >
+                        <FileText size={15} />
+                        Mapa de Ocupação
+                    </button>
                 </div>
             </div>
 
-            {/* ── Toggle de visualização ── */}
-            <div className='flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit mb-6'>
-                <button
-                    onClick={() => setViewMode('grade')}
-                    className='flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200'
-                    style={viewMode === 'grade'
-                        ? { background: 'linear-gradient(135deg, #1c1aa3, #3730a3)', color: 'white', boxShadow: '0 2px 8px rgba(28,26,163,0.35)' }
-                        : { color: '#6b7280' }
-                    }
-                >
-                    <LayoutGrid size={15} />
-                    Grade por Sala
-                </button>
-                <button
-                    onClick={() => setViewMode('calendario')}
-                    className='flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200'
-                    style={viewMode === 'calendario'
-                        ? { background: 'linear-gradient(135deg, #1c1aa3, #3730a3)', color: 'white', boxShadow: '0 2px 8px rgba(28,26,163,0.35)' }
-                        : { color: '#6b7280' }
-                    }
-                >
-                    <Calendar size={15} />
-                    Calendário Mensal
-                </button>
+            <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
+                <h3 className='text-sm font-semibold text-gray-700 mb-3'>Legenda de Cursos:</h3>
+                <div className='flex flex-wrap gap-3'>
+                    {cursos.map(curso => (
+                        <div key={curso.id} className='flex items-center gap-2'>
+                            <div className='w-4 h-4 rounded' style={{ backgroundColor: curso.cor }} />
+                            <span className='text-sm text-gray-700'>{curso.siglaCurso || curso.sigla} — {curso.nomeCurso || curso.nome}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            {/* ── View: Grade ── */}
-            {viewMode === 'grade' && (
-                <>
-                    <div className='mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200'>
-                        <h3 className='text-sm font-semibold text-gray-700 mb-3'>Legenda de Cursos:</h3>
-                        <div className='flex flex-wrap gap-3'>
-                            {cursos.map(curso => (
-                                <div key={curso.id} className='flex items-center gap-2'>
-                                    <div className='w-4 h-4 rounded' style={{ backgroundColor: curso.cor }} />
-                                    <span className='text-sm text-gray-700'>{curso.siglaCurso || curso.sigla} — {curso.nomeCurso || curso.nome}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <Filters filters={filters} setFilters={setFilters} cursos={cursos} salas={salas} />
-                    <ScheduleGridBySala filters={filters} periodoAtivo={periodoAtivo} />
-                </>
-            )}
-
             {/* ── View: Calendário ── */}
-            {viewMode === 'calendario' && (
-                <MonthCalendar />
-            )}
+            <MonthCalendar />
 
             {/* ── Modal de exportação .ics ── */}
             {showExport && (
                 <ExportICSModal onClose={() => setShowExport(false)} />
+            )}
+
+            {/* ── Modal do Mapa de Ocupação ── */}
+            {showMapa && (
+                <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+                        <div className="px-8 py-4 border-b flex justify-between items-center bg-slate-50">
+                            <h3 className="font-black text-slate-800 uppercase tracking-tight">Mapa de Ocupação de Salas</h3>
+                            <button onClick={() => setShowMapa(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto">
+                            <MapaOcupacao />
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )
 }
 
 export default ScheduleViiew
+

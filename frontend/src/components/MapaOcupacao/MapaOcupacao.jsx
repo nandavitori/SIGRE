@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Clock, MapPin, GraduationCap, FileText, Calendar, Loader2, X, Plus, Trash2, BookOpen, User, AlertCircle } from 'lucide-react';
+import { MapPin, FileText, Loader2, Plus, Trash2, User } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getReservations, createReservation, deleteReservation } from '../../services/ReservationService';
@@ -215,6 +215,73 @@ export default function MapaOcupacao() {
   const nomeProf = (id) => professores.find(p => String(p.id || p.idProfessor) === id)?.nomeProf || 'Prof.'
   const nomeSala = (id) => salas.find(s => String(s.id || s.idSala) === id)?.nomeSala || 'Sala'
 
+  const gerarPDF = () => {
+    const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
+    const curso = cursos.find(c => String(c.id || c.idCurso) === filtroCursoId)?.nomeCurso || 'Geral';
+    const periodo = periodos.find(p => String(p.id || p.idPeriodo) === filtroPeriodoId)?.semestre || '';
+
+    doc.setFontSize(16);
+    doc.text(`Mapa de Ocupação - ${curso}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Período: ${periodo} | Gerado em: ${new Date().toLocaleString()}`, 14, 22);
+
+    const processarTurno = (turno) => {
+      const slots = SLOTS.filter(s => s.shift === turno);
+      const rows = slots.map(slot => {
+        const row = [slot.label];
+        WEEKDAYS.forEach(dia => {
+          if (slot.isBreak) {
+            row.push('PAUSA');
+          } else {
+            const res = encontrarReserva(slot, dia);
+            if (res) {
+              const d = extrair(res);
+              row.push(`${d.uso}\n${nomeProf(d.professorId)}\n${nomeSala(d.salaId)}`);
+            } else {
+              row.push('');
+            }
+          }
+        });
+        return row;
+      });
+      return rows;
+    };
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Horário', ...WEEKDAYS]],
+      body: processarTurno(Shift.MANHA),
+      theme: 'grid',
+      headStyles: { fillColor: [28, 26, 163], fontSize: 8 },
+      styles: { fontSize: 7, cellPadding: 2, minCellHeight: 15 },
+      columnStyles: { 0: { cellWidth: 25, fontStyle: 'bold' } },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.cell.text[0] === 'PAUSA') {
+          data.cell.styles.fillColor = [255, 248, 220];
+        }
+      }
+    });
+
+    doc.addPage();
+    doc.text(`TURNO: TARDE`, 14, 15);
+    autoTable(doc, {
+      startY: 20,
+      head: [['Horário', ...WEEKDAYS]],
+      body: processarTurno(Shift.TARDE),
+      theme: 'grid',
+      headStyles: { fillColor: [28, 26, 163], fontSize: 8 },
+      styles: { fontSize: 7, cellPadding: 2, minCellHeight: 15 },
+      columnStyles: { 0: { cellWidth: 25, fontStyle: 'bold' } },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.cell.text[0] === 'PAUSA') {
+          data.cell.styles.fillColor = [255, 248, 220];
+        }
+      }
+    });
+
+    doc.save(`Mapa_Ocupacao_${curso.replace(/\s+/g, '_')}.pdf`);
+  };
+
   const RenderTabela = ({ titulo, turno }) => (
     <div className="mb-10">
       <h2 className="text-lg font-black text-slate-700 mb-4">{titulo}</h2>
@@ -283,6 +350,9 @@ export default function MapaOcupacao() {
     <div className="p-6 bg-slate-50 min-h-screen">
       <div className="bg-white p-6 rounded-2xl shadow-sm mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-black text-[#1c1aa3]">MAPA DE OCUPAÇÃO</h1>
+        <button onClick={gerarPDF} className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold shadow-lg hover:bg-green-700 transition-all">
+          <FileText size={18} /> Exportar PDF
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
