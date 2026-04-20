@@ -1,8 +1,27 @@
 # app/schemas/user.py
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, computed_field, AliasChoices
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, computed_field, AliasChoices, field_validator
 from typing import Optional, Any, Union
 from datetime import datetime
+import re
+
+def validar_senha_forte(v: Optional[str]) -> Optional[str]:
+    if not v:
+        return v
+        
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$", v):
+        raise ValueError("A senha deve ter no mínimo 12 caracteres, incluindo maiúsculas, minúsculas, números e símbolos.")
+    
+    termos_proibidos = (
+        "senha", "password", "12345", "qwerty", "admin", "teste", 
+        "sigre", "uepa", "aluno", "prof"
+    )
+    
+    v_lower = v.lower()
+    if any(termo in v_lower for termo in termos_proibidos):
+        raise ValueError("A senha contém termos proibidos, previsíveis ou dados do sistema.")
+        
+    return v
 
 class UserLogin(BaseModel):
     username: str
@@ -28,6 +47,11 @@ class UserCreate(UserBase):
     # Alias para frontend
     papel: Optional[str] = Field(None, validation_alias="papel")
 
+    @field_validator('senha')
+    @classmethod
+    def validar_complexidade(cls, v: str) -> str:
+        return validar_senha_forte(v)
+
 class UserUpdate(BaseModel):
     nome: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -35,12 +59,18 @@ class UserUpdate(BaseModel):
     telefone: Optional[str] = None
     tipo_usuario: Optional[int] = None
     senha: Optional[str] = None
+    senha_atual: Optional[str] = None
     matricula: Optional[str] = None
     cursoId: Optional[int] = Field(None, alias="cursoId")
     siape: Optional[int] = None
     departamento: Optional[str] = None
     status: Optional[str] = None
     papel: Optional[str] = None
+
+    @field_validator('senha')
+    @classmethod
+    def validar_complexidade(cls, v: str) -> str:
+        return validar_senha_forte(v)
 
 class UserOut(UserBase):
     id: int

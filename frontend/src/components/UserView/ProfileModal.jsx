@@ -84,7 +84,13 @@ const ProfileModal = ({ userRole, onClose }) => {
             setSuccess('Perfil atualizado com sucesso!')
         } catch (err) {
             const d = err.response?.data?.detail
-            setError(typeof d === 'string' ? d : 'Erro ao salvar as alterações.')
+            if (Array.isArray(d)) {
+                setError(d[0].msg.replace('Value error, ', ''))
+            } else if (typeof d === 'string') {
+                setError(d)
+            } else {
+                setError('Erro ao salvar as alterações.')
+            }
         } finally {
             setSaving(false)
         }
@@ -95,8 +101,22 @@ const ProfileModal = ({ userRole, onClose }) => {
         e.preventDefault()
         const { senhaAtual, novaSenha, confirmar } = senhaForm
 
-        if (!senhaAtual)             { setError('Informe a senha atual.'); return }
-        if (novaSenha.length < 6)    { setError('A nova senha deve ter ao menos 6 caracteres.'); return }
+        if (!senhaAtual) { setError('Informe a senha atual.'); return }
+        
+        // 1. Validação de Complexidade
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/
+        if (!passwordRegex.test(novaSenha)) {
+            setError('A nova senha deve ter mín. 12 caracteres, com maiúsculas, minúsculas, números e símbolos.')
+            return
+        }
+
+        // 2. Validação de Termos Proibidos
+        const proibidos = ["senha", "password", "12345", "qwerty", "admin", "teste", "sigre", "uepa", "aluno", "prof"]
+        if (proibidos.some(termo => novaSenha.toLowerCase().includes(termo))) {
+            setError('A nova senha contém termos fáceis de adivinhar.')
+            return
+        }
+
         if (novaSenha !== confirmar) { setError('As senhas não coincidem.'); return }
         if (!perfil?.id)             { setError('Sessão inválida. Faça login novamente.'); return }
 
@@ -107,7 +127,13 @@ const ProfileModal = ({ userRole, onClose }) => {
             setSuccess('Senha alterada com sucesso!')
         } catch (err) {
             const d = err.response?.data?.detail
-            setError(typeof d === 'string' ? d : 'Senha atual incorreta ou erro ao alterar.')
+            if (Array.isArray(d)) {
+                setError(d[0].msg.replace('Value error, ', ''))
+            } else if (typeof d === 'string') {
+                setError(d)
+            } else {
+                setError('Senha atual incorreta ou erro ao alterar.')
+            }
         } finally {
             setSaving(false)
         }
@@ -285,7 +311,7 @@ const ProfileModal = ({ userRole, onClose }) => {
                             {tab === 'senha' && (
                                 <form id="profile-senha-form" onSubmit={handleSaveSenha} className="space-y-4">
                                     <p className="text-xs text-gray-500">
-                                        A nova senha deve ter no mínimo 6 caracteres.
+                                        A nova senha deve ter no mínimo 12 caracteres, com maiúsculas, minúsculas, números e símbolos.
                                     </p>
                                     {SENHA_FIELDS.map(({ field, label, key }) => (
                                         <div key={field}>

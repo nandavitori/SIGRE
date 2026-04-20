@@ -85,13 +85,20 @@ const Login = ({ onLoginSuccess }) => {
             }
             onLoginSuccess(userData.papel)
 
-        } catch (err) {
-            // Trata mensagens de erro vindas do backend
-            const msg = err.response?.data?.detail || err.response?.data?.message
+        } 
+        catch (err) {
             if (err.response?.status === 403) {
                 setError('Sua conta ainda aguarda aprovação do administrador.')
+                return
+            }
+            
+            const detail = err.response?.data?.detail || err.response?.data?.message
+            if (Array.isArray(detail)) {
+                setError(detail[0].msg.replace('Value error, ', '')) 
+            } else if (typeof detail === 'string') {
+                setError(detail)
             } else {
-                setError(msg || 'Erro ao conectar. Verifique se o servidor está rodando.')
+                setError('Erro ao conectar. Verifique se o servidor está rodando.')
             }
         } finally {
             setLoading(false)
@@ -133,7 +140,16 @@ const Login = ({ onLoginSuccess }) => {
             if (!departamento.trim())  return 'Informe seu departamento'
         }
 
-        if (password.length < 6)         return 'A senha deve ter no mínimo 6 caracteres'
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/
+        if (!passwordRegex.test(password)) {
+            return 'A senha deve ter mín. 12 caracteres, com maiúsculas, minúsculas, números e símbolos.'
+        }
+        
+        const proibidos = ["senha", "password", "12345", "qwerty", "admin", "teste", "sigre", "uepa", "aluno", "prof"]
+        if (proibidos.some(termo => password.toLowerCase().includes(termo))) {
+            return 'A senha contém termos fáceis de adivinhar.'
+        }
+        
         if (password !== confirmPassword) return 'As senhas não são iguais'
 
         return null
@@ -168,8 +184,14 @@ const Login = ({ onLoginSuccess }) => {
                 `Aguarde a aprovação do administrador para acessar o sistema.`
             )
         } catch (err) {
-            const msg = err.response?.data?.detail || err.response?.data?.message
-            setError(msg || 'Erro ao cadastrar. Tente novamente.')
+            const detail = err.response?.data?.detail || err.response?.data?.message
+            if (Array.isArray(detail)) {
+                setError(detail[0].msg.replace('Value error, ', '')) 
+            } else if (typeof detail === 'string') {
+                setError(detail)
+            } else {
+                setError('Erro ao cadastrar. Tente novamente.')
+            }
         } finally {
             setLoading(false)
         }
@@ -453,7 +475,7 @@ const Login = ({ onLoginSuccess }) => {
                                 <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input type={showRegisterPassword ? 'text' : 'password'} name="password"
                                     value={registerData.password} onChange={handleRegisterChange}
-                                    placeholder="Senha (mín. 6 caracteres)" required
+                                    placeholder="Senha (mín. 12 caracteres)" required
                                     className="w-full pl-11 pr-12 py-3 rounded-xl border border-gray-200 text-gray-800 text-sm bg-gray-50 focus:outline-none transition-all"
                                     onFocus={e => e.target.style.borderColor = accentColor}
                                     onBlur={e  => e.target.style.borderColor = '#e5e7eb'} />

@@ -1,7 +1,7 @@
 from app.services.base_service import BaseService
 from app.repositories.user_repository import user_repository
 from app.models.user import Usuario
-from app.services.security import hash_password
+from app.services.security import hash_password, verify_password
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, Any
@@ -49,8 +49,18 @@ class UserService(BaseService[Usuario]):
         if "curso" in update_data:
             update_data.pop("curso")
 
-        if "senha" in update_data and update_data["senha"]:
+        if "senha" in update_data:
+            senha_atual = update_data.pop("senha_atual", None)
+            
+            if not senha_atual:
+                raise HTTPException(status_code=400, detail="Informe a senha atual para alterá-la.")
+                
+            if not verify_password(senha_atual, user.senha):
+                raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+                
             update_data["senha"] = hash_password(update_data["senha"])
+        else:
+            update_data.pop("senha_atual", None)
         
         return self.repository.update(db, user, update_data)
 

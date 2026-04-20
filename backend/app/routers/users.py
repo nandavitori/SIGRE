@@ -32,13 +32,16 @@ def create_user(
 ):
     return user_service.create_user(db, payload)
 
-@router.put("/{user_id}", response_model=UserOut)
+@router.patch("/{user_id}", response_model=UserOut) 
 def update_user(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(get_db),
-    _admin = Depends(require_role(ROLE_ADMIN))
+    current_user = Depends(get_current_user)
 ):
+    if current_user.id != user_id and not (current_user.tipo_usuario == ROLE_ADMIN):
+         raise HTTPException(status_code=403, detail="Sem permissão")
+         
     return user_service.update_user(db, user_id, payload)
 
 @router.patch("/approve/{user_id}", response_model=UserOut)
