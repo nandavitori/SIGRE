@@ -39,15 +39,7 @@ const Header = ({ isAdmin, setIsAdmin, userRole, onLogOut }) => {
               </button>
             )}
 
-            {/* Botão painel admin (apenas quando não logado como aluno/prof)
-            {!userRole && (
-              <button
-                onClick={() => setIsAdmin(!isAdmin)}
-                className='bg-[#ec1f1fc4] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#3230b3] hover:-translate-y-0.5 transition-all duration-200 shadow-sm hover:shadow-md'
-              >
-                {isAdmin ? 'Visualizar grade' : 'Login'}
-              </button>
-            )} */}
+
           </div>
         </div>
       </div>

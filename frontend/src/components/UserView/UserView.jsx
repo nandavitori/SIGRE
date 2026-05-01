@@ -24,7 +24,7 @@ const UserView = ({ userRole, onLogOut }) => {
     const [showProfile, setShowProfile] = useState(false)
     const { salas } = useSchedule()
     const [showForm, setShowForm]   = useState(false)
-    const [activeTab, setActiveTab] = useState('grade')
+    const [activeTab, setActiveTab] = useState('calendario')
     const [solicitacoes, setSolicitacoes] = useState([])
     const [loading, setLoading] = useState(false)
 
@@ -131,7 +131,7 @@ const UserView = ({ userRole, onLogOut }) => {
                     <div className="flex items-center justify-between">
                         <div className="flex">
                             {[
-                                { key: 'grade',        label: 'Grade de Horários',  Icon: Building2 },
+                                { key: 'calendario',   label: 'Calendário de Ocupação',  Icon: Building2 },
                                 { key: 'solicitacoes', label: 'Minhas Solicitações', Icon: ClipboardList },
                             ].map(({ key, label, Icon }) => (
                                 <button key={key} onClick={() => setActiveTab(key)}
@@ -164,7 +164,7 @@ const UserView = ({ userRole, onLogOut }) => {
 
             {/* Conteúdo */}
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {activeTab === 'grade' && <ScheduleViiew readOnly />}
+                {activeTab === 'calendario' && <ScheduleViiew readOnly />}
 
                 {activeTab === 'solicitacoes' && (
                     <div>

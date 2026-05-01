@@ -32,7 +32,7 @@ const AdminPainel = () => {
     const [horarioEdit, setHorarioEdit] = useState(null)
     const [activeTab, setActiveTab] = useState(() => {
         const params = new URLSearchParams(window.location.search);
-        return params.get('tab') || 'horarios';
+        return params.get('tab') || 'calendario';
     })
 
     const [isGoogleConnected, setIsGoogleConnected] = useState(false)
@@ -229,9 +229,8 @@ const AdminPainel = () => {
     const pendentesUser = usuarios.filter(u => u.status === 'pendente').length
 
     const TABS = [
-        { key: 'horarios', label: 'Horários', Icon: LayoutGrid, badge: null },
-        { key: 'solicitacoes', label: 'Solicitações', Icon: ClipboardList, badge: pendentesSols > 0 ? pendentesSols : null },
         { key: 'calendario', label: 'Calendário', Icon: Calendar, badge: null },
+        { key: 'solicitacoes', label: 'Solicitações', Icon: ClipboardList, badge: pendentesSols > 0 ? pendentesSols : null },
         { key: 'cadastros', label: 'Cadastros', Icon: Database, badge: null },
         { key: 'usuarios', label: 'Usuários', Icon: Users, badge: pendentesUser > 0 ? pendentesUser : null },
         { key: 'configuracoes', label: 'Configurações', Icon: Settings, badge: null },
@@ -362,43 +361,7 @@ const AdminPainel = () => {
                     />
                 )}
 
-                {activeTab === 'horarios' && (
-                    <div className="space-y-6">
-                        {metrics && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Alocações</p>
-                                    <p className="text-2xl font-black text-gray-900">{metrics.total ?? 0}</p>
-                                </div>
-                                {Object.entries(metrics.status || {}).slice(0, 3).map(([k, v]) => (
-                                    <div key={k} className="rounded-xl border border-gray-100 bg-white p-4">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">{k || '—'}</p>
-                                        <p className="text-2xl font-black text-indigo-900">{v}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-950 space-y-2">
-                            <p className="font-bold text-indigo-900">Registrar aulas e horários de salas</p>
-                            <ul className="list-disc pl-5 text-xs text-indigo-900/85 leading-relaxed space-y-1">
-                                <li>
-                                    <strong>Novo horário</strong> abre o assistente completo (sala, disciplina, professor e curso), igual à lógica usada na grade.
-                                </li>
-                                <li>
-                                    Pedidos de espaço feitos por alunos ou professores aparecem em <strong>Solicitações</strong> para aprovação ou recusa.
-                                </li>
-                            </ul>
-                        </div>
-                        <div className="flex flex-wrap gap-2 justify-end">
-                            <button type="button" onClick={() => { setHorarioEdit(null); setShowForm(true) }}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-95 transition-opacity"
-                                style={{ background: 'linear-gradient(135deg,#1c1aa3,#4f46e5)' }}>
-                                <Plus size={16} /> Novo horário
-                            </button>
-                        </div>
-                        <ScheduleViiew isAdmin={true} />
-                    </div>
-                )}
+
 
                 {activeTab === 'solicitacoes' && (
                     <div className="animate-in fade-in duration-500">
@@ -453,7 +416,40 @@ const AdminPainel = () => {
                 )}
 
                 {activeTab === 'calendario' && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
+                        {metrics && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Alocações</p>
+                                    <p className="text-2xl font-black text-gray-900">{metrics.total ?? 0}</p>
+                                </div>
+                                {Object.entries(metrics.status || {}).slice(0, 3).map(([k, v]) => (
+                                    <div key={k} className="rounded-xl border border-gray-100 bg-white p-4">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">{k || '—'}</p>
+                                        <p className="text-2xl font-black text-indigo-900">{v}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-950 space-y-2">
+                            <p className="font-bold text-indigo-900">Registrar aulas e horários de salas</p>
+                            <ul className="list-disc pl-5 text-xs text-indigo-900/85 leading-relaxed space-y-1">
+                                <li>
+                                    <strong>Novo horário</strong> abre o assistente completo (sala, disciplina, professor e curso).
+                                </li>
+                                <li>
+                                    Pedidos de espaço feitos por alunos ou professores aparecem em <strong>Solicitações</strong> para aprovação ou recusa.
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-end">
+                            <button type="button" onClick={() => { setHorarioEdit(null); setShowForm(true) }}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-95 transition-opacity"
+                                style={{ background: 'linear-gradient(135deg,#1c1aa3,#4f46e5)' }}>
+                                <Plus size={16} /> Novo horário
+                            </button>
+                        </div>
+
                         {!isGoogleConnected ? (
                             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 animate-in fade-in slide-in-from-top-2">
                                 <div className="flex items-center gap-3">
@@ -489,7 +485,7 @@ const AdminPainel = () => {
                                 </button>
                             </div>
                         )}
-                        <MonthCalendar />
+                        <ScheduleViiew isAdmin={true} />
                     </div>
                 )}
                 {activeTab === 'cadastros' && <DataManager />}

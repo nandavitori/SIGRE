@@ -22,7 +22,7 @@ const ScheduleViiew = ({ isAdmin = false }) => {
             {/* ── Cabeçalho ── */}
             <div className='flex justify-between items-start mb-6 pb-6 border-b-2 border-gray-200'>
                 <div>
-                    <h2 className='text-3xl font-bold text-gray-900 mb-2'>Grade de Horários</h2>
+                    <h2 className='text-3xl font-bold text-gray-900 mb-2'>Calendário de Ocupação</h2>
                     <p className='text-gray-600'>
                         Visualize os horários das aulas e ocupação do campus
                     </p>
