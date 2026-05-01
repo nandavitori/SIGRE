@@ -44,7 +44,10 @@ def get_calendar_events(
 		end = next_month
 	items = list_events(db=db, user_id=_u.id, time_min_utc=start, time_max_utc=end)
 	if items is None:
-		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google credentials not connected")
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST, 
+			detail="Credenciais do Google não conectadas ou expiradas. Reautentique em Admin → Calendário."
+		)
 	result = []
 	for ev in items:
 		if not _is_platform_event(ev):
@@ -86,7 +89,10 @@ def google_list_events(
 ):
 	items = list_events(db=db, user_id=_u.id, time_min_utc=start, time_max_utc=end, calendar_id=calendar_id)
 	if items is None:
-		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google credentials not connected")
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST, 
+			detail="Credenciais do Google não conectadas ou expiradas. Reautentique em Admin → Calendário."
+		)
 	return {"items": [item for item in items if _is_platform_event(item)]}
 
 
@@ -103,7 +109,10 @@ def google_create_event(payload: GoogleEventCreate, db: Session = Depends(get_db
 		calendar_id=payload.calendar_id,
 	)
 	if evt is None:
-		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google credentials not connected")
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST, 
+			detail="Credenciais do Google não conectadas ou expiradas. Reautentique em Admin → Calendário."
+		)
 	return evt
 
 

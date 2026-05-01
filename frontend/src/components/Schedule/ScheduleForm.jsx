@@ -1,378 +1,115 @@
-import { useState, useEffect } from 'react'
 import { useSchedule } from './ScheduleContext'
-import { diasSemana } from '../../data/data'
-import {
-    ChevronLeft, Check, Plus, Clock, X, ArrowRight,
-    Calendar, Building2, BookOpen, GraduationCap, User, ExternalLink
-} from 'lucide-react'
+import { useScheduleForm } from '../../hooks/useScheduleForm'
 
-const inp = "w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none focus:border-indigo-400 transition-all text-sm placeholder-gray-400"
-const lbl = "block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2"
-
-const STEPS = [
-    { id: 1, label: 'Período e horário', icon: Calendar },
-    { id: 2, label: 'Sala', icon: Building2 },
-    { id: 3, label: 'Disciplina', icon: BookOpen },
-    { id: 4, label: 'Professor', icon: User },
-    { id: 5, label: 'Confirmação', icon: Check },
-]
+// Componentes Internos
+import FormHeader from './_components/FormHeader'
+import FormFooter from './_components/FormFooter'
+import Step1Horario from './_components/Steps/Step1Horario'
+import Step2Sala from './_components/Steps/Step2Sala'
+import Step3DisciplinaCurso from './_components/Steps/Step3DisciplinaCurso'
+import Step4Professor from './_components/Steps/Step4Professor'
+import Step5Confirmacao from './_components/Steps/Step5Confirmacao'
 
 const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreDraft }) => {
-    const { cursos, salas, periodos, professores, disciplinas, periodoAtivo } = useSchedule()
-    const [step, setStep] = useState(1)
-    const [isSaving, setIsSaving] = useState(false)
-    const [errors, setErrors] = useState({})
-    const [form, setForm] = useState({
-        periodoId: String(periodoAtivo || ''), dataInicio: '', dataFim: '',
-        diaSemana: '', horarioInicio: '', horarioFim: '',
-        salaId: '', disciplinaId: '', cursoId: '', professorId: '',
+    const { 
+        cursos, salas, periodos, professores, disciplinas, periodoAtivo 
+    } = useSchedule()
+
+    const {
+        step,
+        form, set,
+        errors,
+        isSaving,
+        handleNext, handleBack,
+        handleSubmit,
+        handleGoTo
+    } = useScheduleForm({
+        horarioEdit,
+        periodoAtivo,
+        periodos,
+        onSave,
+        onCancel,
+        onGoToCadastros,
+        restoreDraft
     })
-
-    // Restaura rascunho ao voltar do Cadastros
-    useEffect(() => {
-        if (!restoreDraft || horarioEdit) return
-        const draft = sessionStorage.getItem('scheduleFormDraft')
-        const draftStep = sessionStorage.getItem('scheduleFormStep')
-        if (draft) {
-            try {
-                setForm(JSON.parse(draft))
-                if (draftStep) setStep(parseInt(draftStep))
-            } catch { }
-            sessionStorage.removeItem('scheduleFormDraft')
-            sessionStorage.removeItem('scheduleFormStep')
-        }
-    }, [restoreDraft, horarioEdit, form.periodoId])
-
-    useEffect(() => {
-        if (!horarioEdit && periodoAtivo && !form.periodoId) {
-            set('periodoId', String(periodoAtivo))
-        }
-    }, [periodoAtivo, horarioEdit])
-
-    useEffect(() => {
-        if (horarioEdit) {
-            const p = periodos.find(p => p.id === horarioEdit.periodoId)
-            setForm({
-                periodoId: String(horarioEdit.periodoId || ''),
-                dataInicio: horarioEdit.dataInicio || p?.dataInicio || '',
-                dataFim: horarioEdit.dataFim || p?.dataFim || '',
-                diaSemana: horarioEdit.diaSemana || '',
-                horarioInicio: horarioEdit.horarioInicio || '',
-                horarioFim: horarioEdit.horarioFim || '',
-                salaId: String(horarioEdit.salaId || ''),
-                disciplinaId: String(horarioEdit.disciplinaId || horarioEdit.disciplina?.id || ''),
-                cursoId: String(horarioEdit.cursoId || ''),
-                professorId: String(horarioEdit.professorId || horarioEdit.professor?.id || ''),
-            })
-        }
-    }, [horarioEdit, periodos])
-
-    const set = (k, v) => {
-        setForm(f => ({ ...f, [k]: v }))
-        if (errors[k]) setErrors(prev => {
-            const next = { ...prev }
-            delete next[k]
-            return next
-        })
-    }
-
-    // Salva rascunho e redireciona para Cadastros na aba correta
-    const handleGoTo = (tab) => {
-        sessionStorage.setItem('scheduleFormDraft', JSON.stringify(form))
-        sessionStorage.setItem('scheduleFormStep', String(step))
-        onGoToCadastros(tab)
-    }
-
-    const validateStep = (s) => {
-        const newErrors = {}
-        if (s === 1) {
-            if (!form.diaSemana) newErrors.diaSemana = 'Selecione o dia da semana'
-            if (!form.horarioInicio) newErrors.horarioInicio = 'Obrigatório'
-            if (!form.horarioFim) newErrors.horarioFim = 'Obrigatório'
-            if (form.horarioInicio && form.horarioFim && form.horarioInicio >= form.horarioFim) {
-                newErrors.horarioFim = 'Deve ser após o início'
-            }
-            if (!form.dataInicio) newErrors.dataInicio = 'Obrigatório'
-            if (!form.dataFim) newErrors.dataFim = 'Obrigatório'
-        }
-        if (s === 2) {
-            if (!form.salaId) newErrors.salaId = 'Selecione uma sala ou laboratório'
-        }
-        if (s === 3) {
-            if (!form.disciplinaId) newErrors.disciplinaId = 'Selecione a disciplina'
-            if (!form.cursoId) newErrors.cursoId = 'Selecione o curso'
-        }
-        if (s === 4) {
-            if (!form.professorId) newErrors.professorId = 'Selecione o professor responsável'
-        }
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const handleNext = () => {
-        if (validateStep(step)) setStep(s => s + 1)
-    }
-
-    const handleSubmit = async () => {
-        console.log('handleSubmit trigger - Step:', step, 'Form:', form);
-        if (form.horarioInicio >= form.horarioFim) {
-            alert('O horário de término deve ser maior que o de início.');
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            const payload = {
-                cursoId: parseInt(form.cursoId),
-                salaId: parseInt(form.salaId),
-                professorId: parseInt(form.professorId),
-                disciplinaId: parseInt(form.disciplinaId),
-                periodoId: parseInt(form.periodoId),
-                diaSemana: form.diaSemana,
-                horarioInicio: form.horarioInicio,
-                horarioFim: form.horarioFim,
-                dataInicio: new Date(form.dataInicio).toISOString(),
-                dataFim: new Date(form.dataFim).toISOString(),
-            };
-            console.log('Final Payload Prep:', payload);
-            await onSave(payload);
-        } catch (err) {
-            console.error('Error in handleSubmit:', err);
-            alert('Não foi possível processar os dados do formulário. Verifique se todas as datas e horários estão corretos.');
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
-    const getPeriodo = () => periodos.find(p => p.id === parseInt(form.periodoId))
-    const getSala = () => salas.find(s => s.id === parseInt(form.salaId))
-    const getDisciplina = () => disciplinas.find(d => d.id === parseInt(form.disciplinaId))
-    const getCurso = () => cursos.find(c => c.id === parseInt(form.cursoId))
-    const getProfessor = () => professores.find(p => p.id === parseInt(form.professorId))
-    const cur = STEPS[step - 1]
-    const StepIcon = cur.icon
-
-    const errHint = (k) => errors[k] ? <p className="text-[10px] text-red-500 font-bold mt-1 animate-in fade-in slide-in-from-top-1">{errors[k]}</p> : null
-    const hasErr = (k) => errors[k] ? " border-red-500 ring-red-100" : ""
-
-    const CadastrarBtn = ({ label, tab }) => (
-        <button type="button" onClick={() => handleGoTo(tab)}
-            className="shrink-0 h-11 px-4 flex items-center gap-1.5 rounded-xl border border-gray-200 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all text-xs font-semibold whitespace-nowrap">
-            <Plus size={12} />
-            {label}
-            <ExternalLink size={10} className="opacity-50 ml-0.5" />
-        </button>
-    )
-
-    const PreviewCard = ({ icon: Icon, title, subtitle }) => (
-        <div className="flex items-center gap-4 p-4 rounded-xl border border-indigo-100 bg-indigo-50">
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <Icon size={16} className="text-indigo-600" />
-            </div>
-            <div className="flex-1">
-                <p className="font-bold text-indigo-900 text-sm">{title}</p>
-                {subtitle && <p className="text-xs text-indigo-400 mt-0.5">{subtitle}</p>}
-            </div>
-            <Check size={15} className="text-indigo-500" />
-        </div>
-    )
 
     return (
         <div className="rounded-2xl overflow-hidden mb-8"
             style={{ border: '1px solid #e5e7eb', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
 
             {/* Cabeçalho */}
-            <div className="px-8 py-6 flex items-center justify-between"
-                style={{ background: 'linear-gradient(135deg, #1c1aa3 0%, #150355 100%)' }}>
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
-                        <StepIcon size={18} className="text-white" />
-                    </div>
-                    <div>
-                        <p className="text-blue-300/80 text-[10px] font-bold uppercase tracking-widest">
-                            {horarioEdit ? 'Editar Horário' : 'Novo Horário'} · Passo {step}/{STEPS.length}
-                        </p>
-                        <h3 className="text-white text-xl font-black leading-tight mt-0.5">{cur.label}</h3>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex gap-2">
-                        {STEPS.map(s => (
-                            <div key={s.id} className="rounded-full transition-all duration-300"
-                                style={{
-                                    width: step === s.id ? '22px' : '8px', height: '8px',
-                                    background: step > s.id ? 'rgba(255,255,255,0.85)' : step === s.id ? 'white' : 'rgba(255,255,255,0.2)',
-                                }} />
-                        ))}
-                    </div>
-                    <button onClick={onCancel}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all">
-                        <X size={15} />
-                    </button>
-                </div>
-            </div>
+            <FormHeader 
+                step={step} 
+                horarioEdit={horarioEdit} 
+                onCancel={onCancel} 
+            />
 
             {/* Corpo */}
             <div className="bg-white px-8 py-8 space-y-6">
+                {step === 1 && (
+                    <Step1Horario 
+                        form={form} 
+                        set={set} 
+                        errors={errors} 
+                    />
+                )}
 
-                {step === 1 && <>
-                    <div className="grid grid-cols-2 gap-5">
-                        <div>
-                            <label className={lbl}>Data de início</label>
-                            <input type="date" className={inp + hasErr('dataInicio')} value={form.dataInicio} onChange={e => set('dataInicio', e.target.value)} />
-                            {errHint('dataInicio')}
-                        </div>
-                        <div>
-                            <label className={lbl}>Data de fim</label>
-                            <input type="date" className={inp + hasErr('dataFim')} value={form.dataFim} onChange={e => set('dataFim', e.target.value)} />
-                            {errHint('dataFim')}
-                        </div>
-                    </div>
-                    <div>
-                        <label className={lbl}>Dia da semana</label>
-                        <div className={`grid grid-cols-6 gap-2 p-1 rounded-2xl ${errors.diaSemana ? 'bg-red-50 ring-1 ring-red-200' : ''}`}>
-                            {diasSemana.map(d => (
-                                <button key={d} type="button" onClick={() => set('diaSemana', d)}
-                                    className="py-3 rounded-xl text-xs font-bold border-2 transition-all"
-                                    style={form.diaSemana === d
-                                        ? { background: 'linear-gradient(135deg,#1c1aa3,#4f46e5)', color: 'white', borderColor: 'transparent', boxShadow: '0 4px 14px rgba(28,26,163,0.3)' }
-                                        : { borderColor: '#e5e7eb', color: '#9ca3af', background: 'white' }}>
-                                    {d.slice(0, 3)}
-                                </button>
-                            ))}
-                        </div>
-                        {errHint('diaSemana')}
-                    </div>
-                    <div className="grid grid-cols-2 gap-5">
-                        <div>
-                            <label className={lbl}><Clock size={11} className="inline mr-1 -mt-0.5" />Horário de início</label>
-                            <input type="time" className={inp + hasErr('horarioInicio')} value={form.horarioInicio} onChange={e => set('horarioInicio', e.target.value)} />
-                            {errHint('horarioInicio')}
-                        </div>
-                        <div>
-                            <label className={lbl}><Clock size={11} className="inline mr-1 -mt-0.5" />Horário de término</label>
-                            <input type="time" className={inp + hasErr('horarioFim')} value={form.horarioFim} onChange={e => set('horarioFim', e.target.value)} />
-                            {errHint('horarioFim')}
-                        </div>
-                    </div>
-                </>}
+                {step === 2 && (
+                    <Step2Sala 
+                        form={form} 
+                        set={set} 
+                        errors={errors} 
+                        salas={salas} 
+                        onGoTo={handleGoTo} 
+                    />
+                )}
 
-                {step === 2 && <>
-                    <div>
-                        <label className={lbl}>Sala ou laboratório</label>
-                        <div className="flex gap-2">
-                            <select className={inp + hasErr('salaId')} value={form.salaId} onChange={e => set('salaId', e.target.value)}>
-                                <option value="">Selecione a sala...</option>
-                                {salas.map(s => <option key={s.id} value={s.id}>{s.nomeSala || s.nome} — {s.tipoSala || s.tipo}</option>)}
-                            </select>
-                            <CadastrarBtn label="Cadastrar sala" tab="salas" />
-                        </div>
-                        {errHint('salaId')}
-                    </div>
-                    {form.salaId && getSala() && <PreviewCard icon={Building2} title={getSala().nomeSala || getSala().nome} subtitle={getSala().tipoSala || getSala().tipo} />}
-                </>}
+                {step === 3 && (
+                    <Step3DisciplinaCurso 
+                        form={form} 
+                        set={set} 
+                        errors={errors} 
+                        disciplinas={disciplinas} 
+                        cursos={cursos} 
+                        onGoTo={handleGoTo} 
+                    />
+                )}
 
-                {step === 3 && <>
-                    <div>
-                        <label className={lbl}>Disciplina</label>
-                        <div className="flex gap-2">
-                            <select className={inp + hasErr('disciplinaId')} value={form.disciplinaId} onChange={e => set('disciplinaId', e.target.value)}>
-                                <option value="">Selecione a disciplina...</option>
-                                {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nomeDisciplina || d.nome}</option>)}
-                            </select>
-                            <CadastrarBtn label="Cadastrar disciplina" tab="disciplinas" />
-                        </div>
-                        {errHint('disciplinaId')}
-                    </div>
-                    <div>
-                        <label className={lbl}>Curso</label>
-                        <div className="flex gap-2">
-                            <select className={inp + hasErr('cursoId')} value={form.cursoId} onChange={e => set('cursoId', e.target.value)}>
-                                <option value="">Selecione o curso...</option>
-                                {cursos.map(c => <option key={c.id} value={c.id}>{c.nomeCurso || c.nome}{(c.siglaCurso || c.sigla) ? ` (${c.siglaCurso || c.sigla})` : ''}</option>)}
-                            </select>
-                            <CadastrarBtn label="Cadastrar curso" tab="cursos" />
-                        </div>
-                        {errHint('cursoId')}
-                    </div>
-                    {form.cursoId && getCurso() && (
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
-                            <div className="w-4 h-4 rounded-full shrink-0" style={{ background: getCurso().corCurso || getCurso().cor }} />
-                            <p className="text-sm font-semibold text-gray-700">{getCurso().nomeCurso || getCurso().nome}{(getCurso().siglaCurso || getCurso().sigla) && <span className="text-gray-400 font-normal"> ({getCurso().siglaCurso || getCurso().sigla})</span>}</p>
-                        </div>
-                    )}
-                </>}
-
-                {step === 4 && <>
-                    <div>
-                        <label className={lbl}>Professor responsável</label>
-                        <div className="flex gap-2">
-                            <select className={inp + hasErr('professorId')} value={form.professorId} onChange={e => set('professorId', e.target.value)}>
-                                <option value="">Selecione o professor...</option>
-                                {professores.map(p => <option key={p.id} value={p.id}>{p.nomeProf || p.nome}</option>)}
-                            </select>
-                            <CadastrarBtn label="Cadastrar professor" tab="professores" />
-                        </div>
-                        {errHint('professorId')}
-                    </div>
-                    {form.professorId && getProfessor() && <PreviewCard icon={User} title={getProfessor().nomeProf || getProfessor().nome} subtitle={getProfessor().emailProf || getProfessor().email} />}
-                </>}
+                {step === 4 && (
+                    <Step4Professor 
+                        form={form} 
+                        set={set} 
+                        errors={errors} 
+                        professores={professores} 
+                        onGoTo={handleGoTo} 
+                    />
+                )}
 
                 {step === 5 && (
-                    <div>
-                        <p className="text-sm text-gray-500 mb-5">Revise os dados antes de salvar.</p>
-                        <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
-                            {[
-                                { Icon: Calendar, label: 'Período', v: getPeriodo()?.semestre },
-                                { Icon: Clock, label: 'Dia/Horário', v: `${form.diaSemana}, ${form.horarioInicio} – ${form.horarioFim}` },
-                                { Icon: Building2, label: 'Sala', v: getSala()?.nomeSala || getSala()?.nome },
-                                { Icon: BookOpen, label: 'Disciplina', v: getDisciplina()?.nomeDisciplina || getDisciplina()?.nome },
-                                { Icon: GraduationCap, label: 'Curso', v: getCurso() ? `${getCurso().nomeCurso || getCurso().nome}${(getCurso().siglaCurso || getCurso().sigla) ? ` (${getCurso().siglaCurso || getCurso().sigla})` : ''}` : '' },
-                                { Icon: User, label: 'Professor', v: getProfessor()?.nomeProf || getProfessor()?.nome },
-                            ].map(({ Icon, label, v }) => (
-                                <div key={label} className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                                        <Icon size={14} className="text-gray-500" />
-                                    </div>
-                                    <span className="text-xs text-gray-400 w-20 shrink-0">{label}</span>
-                                    <span className="text-sm font-semibold text-gray-800 flex-1 truncate">{v || '—'}</span>
-                                    <Check size={13} className="text-green-500 shrink-0" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <Step5Confirmacao 
+                        form={form} 
+                        salas={salas} 
+                        disciplinas={disciplinas} 
+                        cursos={cursos} 
+                        professores={professores} 
+                    />
                 )}
             </div>
 
             {/* Rodapé */}
-            <div className="px-8 py-4 border-t border-gray-100 bg-gray-50/70 flex justify-between items-center">
-                <button type="button" onClick={() => { setErrors({}); step > 1 ? setStep(s => s - 1) : onCancel() }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-500 text-sm font-semibold hover:bg-gray-200 transition-colors">
-                    <ChevronLeft size={15} />{step === 1 ? 'Cancelar' : 'Voltar'}
-                </button>
-                {step < 5
-                    ? <button type="button" onClick={handleNext}
-                        className="flex items-center gap-2 px-7 py-2.5 rounded-xl text-white text-sm font-bold transition-all shadow-lg active:scale-95"
-                        style={{ background: 'linear-gradient(135deg,#1c1aa3,#4f46e5)', boxShadow: '0 4px 16px rgba(28,26,163,0.28)' }}>
-                        Continuar <ArrowRight size={15} />
-                    </button>
-                    : <button type="button" onClick={handleSubmit} disabled={isSaving}
-                        className="flex items-center gap-2 px-7 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-all"
-                        style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)', boxShadow: isSaving ? 'none' : '0 4px 16px rgba(22,163,74,0.25)' }}>
-                        {isSaving ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Salvando...
-                            </>
-                        ) : (
-                            <>
-                                <Check size={15} />{horarioEdit ? 'Atualizar Horário' : 'Salvar Horário'}
-                            </>
-                        )}
-                    </button>
-                }
-            </div>
+            <FormFooter 
+                step={step}
+                isSaving={isSaving}
+                handleNext={handleNext}
+                handleBack={handleBack}
+                handleSubmit={handleSubmit}
+                horarioEdit={horarioEdit}
+            />
+
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+            `}</style>
         </div>
     )
 }

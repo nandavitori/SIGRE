@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 from google.oauth2.credentials import Credentials
+from google.auth.exceptions import RefreshError
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -42,18 +43,25 @@ def list_events(
 	service = build("calendar", "v3", credentials=creds, cache_discovery=False)
 	time_min_utc = ensure_utc(time_min_utc)
 	time_max_utc = ensure_utc(time_max_utc)
-	events_result = (
-		service.events()
-		.list(
-			calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID,
-			timeMin=time_min_utc.isoformat(),
-			timeMax=time_max_utc.isoformat(),
-			singleEvents=True,
-			orderBy="startTime",
+	try:
+		events_result = (
+			service.events()
+			.list(
+				calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID,
+				timeMin=time_min_utc.isoformat(),
+				timeMax=time_max_utc.isoformat(),
+				singleEvents=True,
+				orderBy="startTime",
+			)
+			.execute()
 		)
-		.execute()
-	)
-	return events_result.get("items", [])
+		return events_result.get("items", [])
+	except RefreshError:
+		print(f"Token expirado ou revogado para o usuário {user_id}. Reautenticação necessária.")
+		return None
+	except Exception as e:
+		print(f"Erro ao listar eventos no Google: {e}")
+		return None
 
 
 def create_event(
@@ -91,7 +99,14 @@ def create_event(
 	if recurrence_rule:
 		event_body["recurrence"] = [recurrence_rule]
 
-	created = service.events().insert(calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID, body=event_body).execute()
+	try:
+		created = service.events().insert(calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID, body=event_body).execute()
+	except RefreshError:
+		print(f"Token expirado ou revogado para o usuário {user_id}. Reautenticação necessária.")
+		return None
+	except Exception as e:
+		print(f"Erro ao criar evento no Google: {e}")
+		return None
 	
 	# If it's a recurrent event, 'created' is the parent event.
 	# We might want to expand it to return the instances if needed, but for now returning the created event is fine.
@@ -122,8 +137,15 @@ def update_event(
 			"dateTime": ensure_utc(datetime.fromisoformat(patch["end"]["dateTime"])).isoformat(),
 			"timeZone": "UTC",
 		}
-	updated = service.events().patch(calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID, eventId=event_id, body=patch).execute()
-	return updated
+	try:
+		updated = service.events().patch(calendarId=calendar_id or settings.GOOGLE_CALENDAR_ID, eventId=event_id, body=patch).execute()
+		return updated
+	except RefreshError:
+		print(f"Token expirado ou revogado para o usuário {user_id}. Reautenticação necessária.")
+		return None
+	except Exception as e:
+		print(f"Erro ao atualizar evento no Google: {e}")
+		return None
 
 
 def delete_event(

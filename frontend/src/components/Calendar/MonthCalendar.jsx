@@ -52,13 +52,20 @@ const MonthCalendar = () => {
     const [viewMonth, setViewMonth] = useState(today.getMonth())
     const [selectedDate, setSelectedDate] = useState(null)
     const [filterSala, setFilterSala] = useState('')
-    const [googleEventCount, setGoogleEventCount] = useState(null)
+    const [googleEvents, setGoogleEvents] = useState([])
 
     useEffect(() => {
         const anchor = new Date(viewYear, viewMonth, 15)
         getCalendarEvents({ view: 'month', anchor: anchor.toISOString() })
-            .then((r) => setGoogleEventCount(Array.isArray(r.items) ? r.items.length : 0))
-            .catch(() => setGoogleEventCount(null))
+            .then((r) => {
+                const items = Array.isArray(r.items) ? r.items : []
+                setGoogleEventCount(items.length)
+                setGoogleEvents(items)
+            })
+            .catch(() => {
+                setGoogleEventCount(null)
+                setGoogleEvents([])
+            })
     }, [viewYear, viewMonth])
 
     // Navegar mês
@@ -75,17 +82,69 @@ const MonthCalendar = () => {
 
     const grid = useMemo(() => buildCalendarGrid(viewYear, viewMonth), [viewYear, viewMonth])
 
+    // Converte evento do Google para o formato interno
+    const mapGoogleEvent = (ev) => {
+        const priv = (ev.extendedProperties?.private) || {}
+        const start = new Date(ev.start.dateTime || ev.start.date)
+        const end = new Date(ev.end.dateTime || ev.end.date)
+        
+        return {
+            id: `google-${ev.id}`,
+            googleId: ev.id,
+            localId: priv.local_reservation_id,
+            salaId: parseInt(priv.fk_sala),
+            cursoId: parseInt(priv.fk_curso),
+            disciplina: ev.summary,
+            professor: priv.professor_nome || '',
+            horarioInicio: start.toTimeString().slice(0, 5),
+            horarioFim: end.toTimeString().slice(0, 5),
+            dataInicio: start.toISOString().split('T')[0],
+            dataFim: end.toISOString().split('T')[0],
+            isGoogleOnly: !priv.local_reservation_id,
+            // Se for um evento longo (mais de 24h), consideramos que ele ocupa todos os dias no intervalo
+            isLongEvent: (end - start) > 24 * 60 * 60 * 1000
+        }
+    }
+
     // Para cada data, calcula quais salas estão ocupadas
     const getOcupacoesDoDia = (date) => {
         if (!date) return []
         const diaSemanaIdx = date.getDay()
         const nomeDia = Object.keys(DIA_SEMANA_MAP).find(k => DIA_SEMANA_MAP[k] === diaSemanaIdx)
 
-        return horarios.filter(h => {
+        // 1. Horários locais
+        const locais = horarios.filter(h => {
             if (h.diaSemana !== nomeDia) return false
             if (filterSala && h.salaId !== parseInt(filterSala)) return false
             return dateInRange(date, h.dataInicio, h.dataFim)
         })
+
+        // 2. Eventos do Google (apenas os que não estão nos locais para evitar duplicatas)
+        const idsLocais = new Set(horarios.map(h => String(h.id)))
+        const googleFiltrados = googleEvents
+            .map(mapGoogleEvent)
+            .filter(ge => {
+                if (ge.localId && idsLocais.has(String(ge.localId))) return false
+                if (filterSala && ge.salaId !== parseInt(filterSala)) return false
+                
+                // Verifica se a data está no intervalo do evento Google
+                const d = date.getTime()
+                const ini = new Date(ge.dataInicio + 'T00:00:00').getTime()
+                const fim = new Date(ge.dataFim + 'T23:59:59').getTime()
+                const inRange = d >= ini && d <= fim
+
+                if (!inRange) return false
+
+                // Se for evento curto, verificamos o dia da semana ou se é exatamente o dia
+                if (!ge.isLongEvent) {
+                    const startDay = new Date(ge.dataInicio + 'T00:00:00').getDay()
+                    if (startDay !== diaSemanaIdx) return false
+                }
+
+                return true
+            })
+
+        return [...locais, ...googleFiltrados]
     }
 
     // Calcula taxa de ocupação do dia (salas ocupadas / total salas)

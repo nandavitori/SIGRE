@@ -59,7 +59,10 @@ class AllocationService(BaseService[Alocacao]):
         if items is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Não foi possível consultar o Google Calendar para checagem de conflitos.",
+                detail=(
+                    "O token do Google Calendar expirou ou foi revogado. "
+                    "Por favor, desconecte e conecte novamente em Admin → Calendário."
+                ),
             )
         for ev in items:
             priv = (ev.get("extendedProperties") or {}).get("private") or {}
@@ -248,7 +251,10 @@ class AllocationService(BaseService[Alocacao]):
         if not created or not created.get("id"):
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Falha ao criar evento no Google Calendar (resposta sem id).",
+                detail=(
+                    "Falha ao criar evento no Google Calendar. Verifique se sua conexão Google ainda é válida "
+                    "em Admin → Calendário."
+                ),
             )
         return str(created["id"])
 
