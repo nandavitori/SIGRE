@@ -134,7 +134,7 @@ export const useScheduleForm = ({
         try {
             const payload = {
                 cursoId: parseInt(form.cursoId),
-                salaId: parseInt(form.salaId),
+                salaId: form.salaId,
                 professorId: parseInt(form.professorId),
                 disciplinaId: parseInt(form.disciplinaId),
                 periodoId: parseInt(form.periodoId),

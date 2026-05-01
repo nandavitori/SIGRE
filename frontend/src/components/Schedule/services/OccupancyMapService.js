@@ -29,7 +29,7 @@ export const OccupancyMapService = {
         // Filtros
         let filterText = [];
         if (filters.salaId !== 'all') {
-            const s = allSalas.find(x => x.id === parseInt(filters.salaId));
+            const s = allSalas.find(x => String(x.id) === String(filters.salaId));
             filterText.push(`Sala: ${s?.nomeSala || s?.nome}`);
         }
         if (filters.cursoId !== 'all') {

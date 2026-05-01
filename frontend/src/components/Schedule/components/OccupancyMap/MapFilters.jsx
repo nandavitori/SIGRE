@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, Calendar } from 'lucide-react';
+import { Filter, Calendar } from 'lucide-react';
 
 const MapFilters = ({ 
     filters, 
@@ -78,26 +78,13 @@ const MapFilters = ({
                 </select>
             </div>
 
-            {/* Busca Geral */}
-            <div className="flex-[1.5] min-w-[200px] relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                    type="text"
-                    value={filters.busca}
-                    onChange={(e) => updateFilter('busca', e.target.value)}
-                    placeholder="Buscar disciplina ou professor..."
-                    className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-all hover:bg-white"
-                />
-            </div>
-
             {/* Limpar Filtros */}
-            {(filters.salaId !== 'all' || filters.cursoId !== 'all' || filters.professorId !== 'all' || filters.busca) && (
+            {(filters.salaId !== 'all' || filters.cursoId !== 'all' || filters.professorId !== 'all') && (
                 <button 
                     onClick={() => {
                         updateFilter('salaId', 'all');
                         updateFilter('cursoId', 'all');
                         updateFilter('professorId', 'all');
-                        updateFilter('busca', '');
                     }}
                     className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-tighter px-2 transition-colors"
                 >

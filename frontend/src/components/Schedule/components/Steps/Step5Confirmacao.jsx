@@ -1,7 +1,7 @@
 import { Clock, Building2, BookOpen, GraduationCap, User, Check } from 'lucide-react'
 
 const Step5Confirmacao = ({ form, salas, disciplinas, cursos, professores }) => {
-    const getSala = () => salas.find(s => s.id === parseInt(form.salaId))
+    const getSala = () => salas.find(s => String(s.id) === String(form.salaId))
     const getDisciplina = () => disciplinas.find(d => d.id === parseInt(form.disciplinaId))
     const getCurso = () => cursos.find(c => c.id === parseInt(form.cursoId))
     const getProfessor = () => professores.find(p => p.id === parseInt(form.professorId))

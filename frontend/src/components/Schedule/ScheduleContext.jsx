@@ -118,7 +118,7 @@ export const ScheduleProvider = ({ children }) => {
                         dataInicio: f(start),
                         dataFim: f(end),
                         cursoId: parseInt(priv.fk_curso) || null,
-                        salaId: parseInt(priv.fk_sala) || null,
+                        salaId: priv.fk_sala || null,
                         periodoId: parseInt(priv.fk_periodo) || null,
                         professorId: parseInt(priv.fk_professor) || null,
                         disciplinaId: parseInt(priv.fk_disciplina) || null,

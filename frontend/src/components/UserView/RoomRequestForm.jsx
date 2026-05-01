@@ -106,7 +106,7 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
     const verificarConflito = () => {
         if (!form.salaId || !form.diaSemana || !form.horarioInicio || !form.horarioFim) return false
         const conflitante = horarios.find(h =>
-            h.salaId === parseInt(form.salaId) &&
+            String(h.salaId) === String(form.salaId) &&
             h.diaSemana === form.diaSemana &&
             form.horarioInicio < h.horarioFim &&
             form.horarioFim > h.horarioInicio
@@ -143,7 +143,7 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                 dataEvento:    form.dataEvento || null,
                 horarioInicio: form.horarioInicio,
                 horarioFim:    form.horarioFim,
-                salaId:        parseInt(form.salaId),
+                salaId:        form.salaId,
             }
             const res = await api.post('/solicitations/', payload)
             if (onSolicitacaoCriada) onSolicitacaoCriada(res.data)
@@ -155,7 +155,7 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
         }
     }
 
-    const salaSelecionada = salas.find(s => s.id === parseInt(form.salaId))
+    const salaSelecionada = salas.find(s => String(s.id) === String(form.salaId))
 
     // ── Step 2: Sucesso ──
     if (step === 2) {

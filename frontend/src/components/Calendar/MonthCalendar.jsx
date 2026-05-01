@@ -3,7 +3,8 @@ import { useSchedule } from '../Schedule/ScheduleContext'
 import { getCalendarEvents } from '../../services/GoogleServices'
 import {
     ChevronLeft, ChevronRight, Building2, X,
-    CheckCircle2, XCircle, Clock, BookOpen, User, Trash2
+    CheckCircle2, XCircle, Clock, BookOpen, User, Trash2,
+    Filter
 } from 'lucide-react'
 
 // Mapeamento nome do dia (PT) → índice JS (0=Dom, 1=Seg...)
@@ -43,12 +44,14 @@ function dateInRange(date, dataInicio, dataFim) {
 }
 
 const MonthCalendar = () => {
-    const { horarios, salas, cursos, removerHorario, refreshCount } = useSchedule()
+    const { horarios, salas, cursos, professores, removerHorario, refreshCount } = useSchedule()
     const today = new Date()
     const [viewYear, setViewYear] = useState(today.getFullYear())
     const [viewMonth, setViewMonth] = useState(today.getMonth())
     const [selectedDate, setSelectedDate] = useState(null)
     const [filterSala, setFilterSala] = useState('')
+    const [filterCurso, setFilterCurso] = useState('')
+    const [filterProfessor, setFilterProfessor] = useState('')
     const [googleEvents, setGoogleEvents] = useState([])
     const [googleEventCount, setGoogleEventCount] = useState(null)
 
@@ -91,8 +94,9 @@ const MonthCalendar = () => {
             id: `google-${ev.id}`,
             googleId: ev.id,
             localId: priv.local_reservation_id || null,
-            salaId: parseInt(priv.fk_sala) || 0,
+            salaId: priv.fk_sala || 0,
             cursoId: parseInt(priv.fk_curso) || null,
+            professorId: parseInt(priv.fk_professor) || null,
             disciplina: ev.summary || 'Evento Externo',
             professor: priv.professor_nome || '',
             horarioInicio: start.getHours().toString().padStart(2, '0') + ':' + start.getMinutes().toString().padStart(2, '0'),
@@ -112,7 +116,9 @@ const MonthCalendar = () => {
 
         const ocupaDia = (h) => {
             if (!h) return false
-            if (filterSala && h.salaId !== parseInt(filterSala)) return false
+            if (filterSala && String(h.salaId) !== String(filterSala)) return false
+            if (filterCurso && h.cursoId !== parseInt(filterCurso)) return false
+            if (filterProfessor && h.professorId !== parseInt(filterProfessor)) return false
             
             // Converte para data simples YYYY-MM-DD para comparação sem hora
             const y = date.getFullYear()
@@ -193,7 +199,7 @@ const MonthCalendar = () => {
         })
 
         return salas
-            .filter(s => !filterSala || s.id === parseInt(filterSala))
+            .filter(s => !filterSala || String(s.id) === String(filterSala))
             .map(s => ({
                 ...s,
                 horarios: (ocupacoesMap[s.id] || []).sort((a, b) =>
@@ -220,22 +226,6 @@ const MonthCalendar = () => {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Filtro de sala */}
-                    <select
-                        value={filterSala}
-                        onChange={e => { setFilterSala(e.target.value); setSelectedDate(null) }}
-                        className="text-xs px-3 py-2 rounded-lg border-0 bg-white/15 text-white focus:outline-none focus:ring-2 focus:ring-white/30 cursor-pointer"
-                        style={{ colorScheme: 'dark' }}
-                    >
-                        <option value="" className="text-gray-800 bg-white">Todas as salas</option>
-                        {salas.map(s => (
-                            <option key={s.id} value={s.id} className="text-gray-800 bg-white">
-                                {s.nome}
-                            </option>
-                        ))}
-                    </select>
-
                     {/* Navegação de mês */}
                     <div className="flex items-center gap-1 bg-white/10 rounded-xl p-1">
                         <button onClick={prevMonth}
@@ -251,6 +241,64 @@ const MonthCalendar = () => {
                         </button>
                     </div>
                 </div>
+            
+            {/* ── Barra de Filtros (Copiada do Mapa de Ocupação) ── */}
+            <div className="px-6 py-3 bg-white border-b border-gray-100 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 text-gray-400 mr-1">
+                    <Filter size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Filtros</span>
+                </div>
+
+                {/* Filtro Sala */}
+                <select 
+                    value={filterSala} 
+                    onChange={(e) => { setFilterSala(e.target.value); setSelectedDate(null) }}
+                    className="text-[11px] bg-gray-50 border border-gray-200 text-gray-700 rounded-lg p-1.5 outline-none hover:border-blue-300 transition-colors min-w-[120px]"
+                >
+                    <option value="">Todas as Salas</option>
+                    {salas.map(s => (
+                        <option key={s.id} value={s.id}>{s.nomeSala || s.nome}</option>
+                    ))}
+                </select>
+
+                {/* Filtro Turma/Curso */}
+                <select 
+                    value={filterCurso} 
+                    onChange={(e) => { setFilterCurso(e.target.value); setSelectedDate(null) }}
+                    className="text-[11px] bg-gray-50 border border-gray-200 text-gray-700 rounded-lg p-1.5 outline-none hover:border-blue-300 transition-colors min-w-[120px]"
+                >
+                    <option value="">Todas as Turmas</option>
+                    {cursos.map(c => (
+                        <option key={c.id} value={c.id}>{c.siglaCurso || c.sigla}</option>
+                    ))}
+                </select>
+
+                {/* Filtro Professor */}
+                <select 
+                    value={filterProfessor} 
+                    onChange={(e) => { setFilterProfessor(e.target.value); setSelectedDate(null) }}
+                    className="text-[11px] bg-gray-50 border border-gray-200 text-gray-700 rounded-lg p-1.5 outline-none hover:border-blue-300 transition-colors min-w-[120px]"
+                >
+                    <option value="">Todos os Professores</option>
+                    {professores.map(p => (
+                        <option key={p.id} value={p.id}>{p.nomeProf || p.nome}</option>
+                    ))}
+                </select>
+
+                {/* Limpar Filtros */}
+                {(filterSala || filterCurso || filterProfessor) && (
+                    <button 
+                        onClick={() => {
+                            setFilterSala('');
+                            setFilterCurso('');
+                            setFilterProfessor('');
+                            setSelectedDate(null);
+                        }}
+                        className="text-[10px] font-bold text-red-500 hover:text-red-600 px-2"
+                    >
+                        Limpar
+                    </button>
+                )}
             </div>
 
             {/* ── Legenda de cores ── */}
@@ -439,8 +487,8 @@ const MonthCalendar = () => {
                                         <div className="flex items-center gap-2">
                                             <Building2 size={13}
                                                 style={{ color: sala.ocupada ? '#dc2626' : '#16a34a' }} />
-                                            <span className="text-xs font-bold text-gray-700">{sala.nome}</span>
-                                            <span className="text-[9px] text-gray-400 capitalize">{sala.tipo}</span>
+                                            <span className="text-xs font-bold text-gray-700">{sala.nomeSala || sala.nome}</span>
+                                            <span className="text-[9px] text-gray-400 capitalize">{sala.tipoSala || sala.tipo}</span>
                                         </div>
                                         {sala.ocupada
                                             ? <XCircle size={14} className="text-red-400 shrink-0" />

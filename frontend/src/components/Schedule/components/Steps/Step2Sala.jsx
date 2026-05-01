@@ -5,7 +5,7 @@ import { CadastrarBtn, PreviewCard, ErrorHint } from '../Common'
 const Step2Sala = ({ form, set, errors, salas, onGoTo }) => {
     const { inp, lbl } = STYLES
     const hasErr = (k) => errors[k] ? " border-red-500 ring-red-100" : ""
-    const getSala = () => salas.find(s => s.id === parseInt(form.salaId))
+    const getSala = () => salas.find(s => String(s.id) === String(form.salaId))
 
     return (
         <div className="space-y-6">

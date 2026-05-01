@@ -24,7 +24,7 @@ const ExportICSModal = ({ onClose }) => {
     const horariosFiltrados = useMemo(() => {
         return horarios.filter(h => {
             if (filters.periodoId && h.periodoId !== parseInt(filters.periodoId)) return false
-            if (filters.salaId && h.salaId !== parseInt(filters.salaId)) return false
+            if (filters.salaId && String(h.salaId) !== String(filters.salaId)) return false
             if (filters.cursoId && h.cursoId !== parseInt(filters.cursoId)) return false
             if (filters.diaSemana && h.diaSemana !== filters.diaSemana) return false
             return true
@@ -44,8 +44,8 @@ const ExportICSModal = ({ onClose }) => {
         const calName = [
             'SCA UEPA',
             periodo ? periodo.semestre : '',
-            cursos.find(c => c.id === parseInt(filters.cursoId))?.sigla || '',
-            salas.find(s => s.id === parseInt(filters.salaId))?.nome || '',
+            cursos.find(c => c.id === parseInt(filters.cursoId))?.siglaCurso || cursos.find(c => c.id === parseInt(filters.cursoId))?.sigla || '',
+            salas.find(s => String(s.id) === String(filters.salaId))?.nomeSala || salas.find(s => String(s.id) === String(filters.salaId))?.nome || '',
         ].filter(Boolean).join(' — ')
 
         const filename = [
@@ -87,9 +87,8 @@ const ExportICSModal = ({ onClose }) => {
                             { app: 'Google Calendar', step: 'Configurações → Importar e exportar → Importar' },
                             { app: 'Apple Calendar', step: 'Arquivo → Importar → selecione o .ics' },
                             { app: 'Outlook', step: 'Adicionar calendário → Carregar do arquivo' },
-                        ].map(({ icon, app, step }) => (
+                        ].map(({ app, step }) => (
                             <div key={app} className="flex items-start gap-2.5">
-                                <span className="text-base">{icon}</span>
                                 <div>
                                     <p className="text-xs font-bold text-gray-700">{app}</p>
                                     <p className="text-xs text-gray-400">{step}</p>
@@ -165,7 +164,7 @@ const ExportICSModal = ({ onClose }) => {
                         <select className={inputClass} value={filters.cursoId} onChange={e => set('cursoId', e.target.value)}>
                             <option value="">Todos</option>
                             {cursos.map(c => (
-                                <option key={c.id} value={c.id}>{c.sigla} — {c.nome}</option>
+                                <option key={c.id} value={c.id}>{c.siglaCurso || c.sigla} — {c.nomeCurso || c.nome}</option>
                             ))}
                         </select>
                     </div>
@@ -190,7 +189,7 @@ const ExportICSModal = ({ onClose }) => {
                     <select className={inputClass} value={filters.salaId} onChange={e => set('salaId', e.target.value)}>
                         <option value="">Todas as salas</option>
                         {salas.map(s => (
-                            <option key={s.id} value={s.id}>{s.nome} — {s.tipo}</option>
+                            <option key={s.id} value={s.id}>{s.nomeSala || s.nome} — {s.tipoSala || s.tipo}</option>
                         ))}
                     </select>
                 </div>

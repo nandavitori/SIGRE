@@ -11,7 +11,6 @@ export const useOccupancyMap = () => {
         salaId: 'all',
         cursoId: 'all',
         professorId: 'all',
-        busca: ''
     });
 
     const periodoAtual = periodos.find(p => p.id === periodoAtivo);
@@ -20,16 +19,10 @@ export const useOccupancyMap = () => {
     const filteredHorarios = useMemo(() => {
         return horarios.filter(h => {
             if (h.periodoId !== periodoAtivo) return false;
-            if (filters.salaId !== 'all' && h.salaId !== parseInt(filters.salaId)) return false;
+            if (filters.salaId !== 'all' && String(h.salaId) !== String(filters.salaId)) return false;
             if (filters.cursoId !== 'all' && h.cursoId !== parseInt(filters.cursoId)) return false;
             if (filters.professorId !== 'all' && h.professorId !== parseInt(filters.professorId)) return false;
             
-            if (filters.busca) {
-                const search = filters.busca.toLowerCase();
-                const matchDisc = h.disciplina?.toLowerCase().includes(search);
-                const matchProf = h.professor?.toLowerCase().includes(search);
-                if (!matchDisc && !matchProf) return false;
-            }
             return true;
         }).map(h => {
             // Adiciona o nome da sala para exibição quando filtrado por 'todos'
