@@ -231,6 +231,8 @@ class AllocationService(BaseService[Alocacao]):
                     if weekday_code:
                         data["dia_horario_saida"] = adjusted_end
                         data["recurrency"] = f"RRULE:FREQ=WEEKLY;BYDAY={weekday_code};UNTIL={until_str}"
+                        data["data_inicio"] = to_storage_datetime(start_dt_local.replace(hour=0, minute=0, second=0, microsecond=0))
+                        data["data_fim"] = to_storage_datetime(end_dt_local.replace(hour=23, minute=59, second=59, microsecond=0))
             
             nova = self.repository.create(db, data)
         except Exception as e:
@@ -322,15 +324,14 @@ class AllocationService(BaseService[Alocacao]):
         """
         start_dt = ensure_utc(alocacao.dia_horario_inicio)
         end_dt = ensure_utc(alocacao.dia_horario_saida)
-        
-        events = list_events(db, current_user.id, start_dt, end_dt)
+        events = google_calendar.list_events(db=db, user_id=current_user.id, time_min_utc=start_dt, time_max_utc=end_dt)
         if not events:
             return
 
         for ev in events:
             priv = (ev.get("extendedProperties") or {}).get("private") or {}
             if str(priv.get("local_reservation_id")) == str(alocacao.id):
-                delete_event(db, current_user.id, ev["id"])
+                google_calendar.delete_event(db=db, user_id=current_user.id, event_id=ev["id"])
                 print(f"DEBUG: Evento Google {ev['id']} removido para alocação {alocacao.id}")
 
     def approve_reservation(self, db: Session, reservation_id: int, current_user) -> dict:
@@ -421,12 +422,13 @@ class AllocationService(BaseService[Alocacao]):
         if not update_data:
             raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
 
-        if "dia_horario_inicio" in update_data and "dia_horario_saida" in update_data:
-            if update_data["dia_horario_saida"] <= update_data["dia_horario_inicio"]:
-                raise HTTPException(status_code=400, detail="A data de saída deve ser posterior à data de início.")
-            
-            start_dt_local = update_data["dia_horario_inicio"]
-            end_dt_local = update_data["dia_horario_saida"]
+        start_dt_local = update_data.get("dia_horario_inicio", alocacao.dia_horario_inicio)
+        end_dt_local = update_data.get("dia_horario_saida", alocacao.dia_horario_saida)
+
+        if start_dt_local and end_dt_local and end_dt_local <= start_dt_local:
+            raise HTTPException(status_code=400, detail="A data de saída deve ser posterior à data de início.")
+
+        if "dia_horario_inicio" in update_data or "dia_horario_saida" in update_data or "dia_semana" in update_data:
             dia_semana = update_data.get("dia_semana", alocacao.dia_semana)
             recurrency = update_data.get("recurrency", alocacao.recurrency)
             
@@ -445,6 +447,8 @@ class AllocationService(BaseService[Alocacao]):
                     if weekday_code:
                         update_data["dia_horario_saida"] = adjusted_end
                         update_data["recurrency"] = f"RRULE:FREQ=WEEKLY;BYDAY={weekday_code};UNTIL={until_str}"
+                        update_data["data_inicio"] = to_storage_datetime(start_dt_local.replace(hour=0, minute=0, second=0, microsecond=0))
+                        update_data["data_fim"] = to_storage_datetime(end_dt_local.replace(hour=23, minute=59, second=59, microsecond=0))
 
         prev_status = (alocacao.status or "").upper()
         updated = self.repository.update(db, alocacao, update_data)

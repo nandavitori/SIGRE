@@ -21,9 +21,9 @@ class ReservationBase(BaseModel):
     data_inicio: Optional[datetime] = Field(None, validation_alias="dataInicio", serialization_alias="dataInicio")
     data_fim: Optional[datetime] = Field(None, validation_alias="dataFim", serialization_alias="dataFim")
     
-    uso: Optional[str] = None
-    justificativa: Optional[str] = None
-    oficio: Optional[str] = None
+    uso: Optional[str] = Field(None, max_length=255)
+    justificativa: Optional[str] = Field(None, max_length=255)
+    oficio: Optional[str] = Field(None, max_length=255)
     recurrency: Optional[str] = None
     status: str = "PENDING"
 
@@ -47,9 +47,9 @@ class ReservationUpdate(BaseModel):
     data_inicio: Optional[datetime] = Field(None, validation_alias=AliasChoices("dataInicio", "data_inicio"))
     data_fim: Optional[datetime] = Field(None, validation_alias=AliasChoices("dataFim", "data_fim"))
 
-    uso: Optional[str] = None
-    justificativa: Optional[str] = None
-    oficio: Optional[str] = None
+    uso: Optional[str] = Field(None, max_length=255)
+    justificativa: Optional[str] = Field(None, max_length=255)
+    oficio: Optional[str] = Field(None, max_length=255)
     recurrency: Optional[str] = None
     status: Optional[str] = None
 
