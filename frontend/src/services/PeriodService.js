@@ -1,11 +1,21 @@
-import api from "./api";
-
-/**
- * Lista todos os períodos — GET /periods/
- * Retorna: [{ id, semestre, descricao, data_inicio, data_fim }]
- */
+import api from './api'
 
 export const getPeriods = async () => {
-    const res = await api.get('/periods/')
-    return res.data
+  const res = await api.get('/periods/')
+  return res.data
+}
+
+export const createPeriod = async (data) => {
+  const res = await api.post('/periods/', data)
+  return res.data
+}
+
+export const updatePeriod = async (id, data) => {
+  const res = await api.put(`/periods/${id}`, data)
+  return res.data
+}
+
+export const deletePeriod = async (id) => {
+  const res = await api.delete(`/periods/${id}`)
+  return res.data
 }

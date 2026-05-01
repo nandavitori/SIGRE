@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, GraduationCap, BookOpen, XCircle, UserPlus, Loader2 } from 'lucide-react';
 import api from '../../services/api';
-import { getCursos } from '../../services/CouserService';
+import { getCourses } from '../../services/CourseService';
 
 const PAPEL_STYLES = {
     aluno:     { label: 'Aluno',     bg: '#ede9fe', color: '#7c3aed' },
@@ -58,7 +58,7 @@ export default function UserManagement({ usuarios, onAprovar, onRecusar, onDelet
     })
 
     useEffect(() => {
-        getCursos().then(setCursos).catch(() => setCursos([]))
+        getCourses().then(setCursos).catch(() => setCursos([]))
     }, [])
 
     const handleCriarUsuario = async (e) => {

@@ -7,7 +7,7 @@ import logo from '../../assets/logouepa.png'
 
 // ── Services ──────────────────────────────────────────────────────────────────
 import { login, register, saveSession, fetchCurrentUser, applyUserProfile } from '../../services/AuthService'
-import { getCursos } from '../../services/CouserService'
+import { getCourses } from '../../services/CourseService'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Admin usa credenciais sincronizadas com o backend
@@ -42,7 +42,7 @@ const Login = ({ onLoginSuccess }) => {
         if (mode === 'register') {
             const carregarCursos = async () => {
                 try {
-                    const data = await getCursos()
+                    const data = await getCourses()
                     setCursosDisponiveis(data)
                 } catch (err) {
                     console.error('Erro ao carregar cursos:', err)
