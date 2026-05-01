@@ -1,5 +1,5 @@
 import { User } from 'lucide-react'
-import { STYLES } from '../../_config/ScheduleFormConfig'
+import { STYLES } from '../../config/ScheduleFormConfig'
 import { CadastrarBtn, PreviewCard, ErrorHint } from '../Common'
 
 const Step4Professor = ({ form, set, errors, professores, onGoTo }) => {

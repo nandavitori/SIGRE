@@ -137,7 +137,7 @@ const MonthCalendar = () => {
         }
 
         const locais = horarios.filter(ocupaDia)
-        const idsLocais = new Set(horarios.map(h => String(h.id)))
+        const idsLocais = new Set(horarios.map(h => String(h.id).split(':')[0]))
         const googleFiltrados = googleEvents
             .map(mapGoogleEvent)
             .filter(ge => {

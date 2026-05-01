@@ -1,6 +1,6 @@
 import { Clock } from 'lucide-react'
 import { diasSemana } from '../../../../data/data'
-import { STYLES } from '../../_config/ScheduleFormConfig'
+import { STYLES } from '../../config/ScheduleFormConfig'
 import { ErrorHint } from '../Common'
 
 const Step1Horario = ({ form, set, errors }) => {

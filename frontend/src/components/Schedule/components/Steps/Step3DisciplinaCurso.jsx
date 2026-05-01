@@ -1,4 +1,4 @@
-import { STYLES } from '../../_config/ScheduleFormConfig'
+import { STYLES } from '../../config/ScheduleFormConfig'
 import { CadastrarBtn, ErrorHint } from '../Common'
 
 const Step3DisciplinaCurso = ({ form, set, errors, disciplinas, cursos, onGoTo }) => {

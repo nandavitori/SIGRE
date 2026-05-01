@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { STEPS } from '../_config/ScheduleFormConfig'
+import { STEPS } from '../config/ScheduleFormConfig'
 
 const FormHeader = ({ step, horarioEdit, onCancel }) => {
     const cur = STEPS[step - 1]

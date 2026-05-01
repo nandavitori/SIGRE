@@ -2,13 +2,13 @@ import { useSchedule } from './ScheduleContext'
 import { useScheduleForm } from '../../hooks/useScheduleForm'
 
 // Componentes Internos
-import FormHeader from './_components/FormHeader'
-import FormFooter from './_components/FormFooter'
-import Step1Horario from './_components/Steps/Step1Horario'
-import Step2Sala from './_components/Steps/Step2Sala'
-import Step3DisciplinaCurso from './_components/Steps/Step3DisciplinaCurso'
-import Step4Professor from './_components/Steps/Step4Professor'
-import Step5Confirmacao from './_components/Steps/Step5Confirmacao'
+import FormHeader from './components/FormHeader'
+import FormFooter from './components/FormFooter'
+import Step1Horario from './components/Steps/Step1Horario'
+import Step2Sala from './components/Steps/Step2Sala'
+import Step3DisciplinaCurso from './components/Steps/Step3DisciplinaCurso'
+import Step4Professor from './components/Steps/Step4Professor'
+import Step5Confirmacao from './components/Steps/Step5Confirmacao'
 
 const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreDraft }) => {
     const { 
