@@ -6,7 +6,7 @@ from sqlalchemy import exc
 from app.try_database import get_db
 from app.models import TipoSala, Sala 
 from app.schemas.room_type import TipoSalaCreate, TipoSalaOut, TipoSalaUpdate
-from app.services.rbac import require_role, ROLE_ADMIN, ROLE_USER
+from app.services.auth.rbac import require_role, ROLE_ADMIN, ROLE_USER
 
 router = APIRouter(prefix="/room-types", tags=["Room Types"])
 

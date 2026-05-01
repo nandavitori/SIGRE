@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.try_database import get_db
 from app.schemas.discipline import DisciplineCreate, DisciplineUpdate, DisciplineOut
-from app.services.discipline_service import discipline_service
-from app.services.rbac import require_role, ROLE_USER, ROLE_ADMIN
+from app.services.entities.discipline_service import discipline_service
+from app.services.auth.rbac import require_role, ROLE_USER, ROLE_ADMIN
 
 router = APIRouter(prefix="/disciplines", tags=["disciplines"])
 

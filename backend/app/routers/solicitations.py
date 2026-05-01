@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.try_database import get_db
 from app.schemas.solicitation import SolicitationCreate, SolicitationOut, SolicitationUpdateStatus
-from app.services.solicitation_service import solicitation_service
-from app.services.rbac import require_role, ROLE_USER, ROLE_ADMIN
+from app.services.booking.solicitation_service import solicitation_service
+from app.services.auth.rbac import require_role, ROLE_USER, ROLE_ADMIN
 from app.models import Usuario
 
 router = APIRouter(prefix="/solicitations", tags=["solicitations"])

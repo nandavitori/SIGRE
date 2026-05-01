@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from app.try_database import get_db
-from app.services.rbac import require_role
-from app.services.google_calendar import list_events, create_event, update_event, delete_event
+from app.services.auth.rbac import require_role
+from app.services.calendar.google_calendar import list_events, create_event, update_event, delete_event
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])

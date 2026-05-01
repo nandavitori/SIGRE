@@ -8,7 +8,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from app.config import get_settings
-from app.services.datetime_utils import ensure_utc
+from app.services.infra.datetime_utils import ensure_utc
 from app.models import GoogleCredential
 
 settings = get_settings()

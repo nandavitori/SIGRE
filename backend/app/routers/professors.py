@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.try_database import get_db
 from app.schemas.professor import ProfessorCreate, ProfessorUpdate, ProfessorOut
-from app.services.professor_service import professor_service
-from app.services.rbac import require_role, ROLE_USER, ROLE_ADMIN
+from app.services.entities.professor_service import professor_service
+from app.services.auth.rbac import require_role, ROLE_USER, ROLE_ADMIN
 
 router = APIRouter(prefix="/professors", tags=["professors"])
 

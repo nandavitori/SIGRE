@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.professor_repository import professor_repository
 from app.models.professor import Professor
 from app.schemas.professor import ProfessorCreate, ProfessorUpdate

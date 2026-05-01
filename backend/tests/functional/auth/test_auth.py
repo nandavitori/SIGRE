@@ -128,7 +128,7 @@ def test_login_non_existent_user(client):
 
 def test_login_unapproved_user(client, db_session):
     # Register pending user directly to DB
-    from app.services.security import hash_password
+    from app.services.auth.security import hash_password
     pending_user = Usuario(
         email="pending@test.com",
         username="pending_test",

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.user import Usuario
 from app.schemas.user import UserCreate
-from app.services.security import verify_password, hash_password, create_access_token
+from app.services.auth.security import verify_password, hash_password, create_access_token
 
 # Mapeamento de Papéis
 ROLE_MAP = {

@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.try_database import get_db
 from app.schemas.course import CourseCreate, CourseUpdate, CourseOut
-from app.services.course_service import course_service
-from app.services.rbac import require_role, ROLE_ADMIN
+from app.services.entities.course_service import course_service
+from app.services.auth.rbac import require_role, ROLE_ADMIN
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 

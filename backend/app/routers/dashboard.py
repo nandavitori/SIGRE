@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.try_database import get_db
 from app.models import Alocacao, Sala, Usuario
-from app.services.rbac import require_role, ROLE_ADMIN
+from app.services.auth.rbac import require_role, ROLE_ADMIN
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 

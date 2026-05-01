@@ -59,7 +59,7 @@ def test_reports_user_course_info(client, admin_token_headers, db_session):
     
     user = db_session.query(Usuario).filter(Usuario.email == "report_user@test.com").first()
     if not user:
-        from app.services.security import hash_password
+        from app.services.auth.security import hash_password
         user = Usuario(
             nome="Report User",
             email="report_user@test.com",

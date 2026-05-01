@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_
 from app.repositories.base_repository import BaseRepository
 from app.models.allocation import Alocacao
 from datetime import datetime
-from app.services.datetime_utils import to_storage_datetime
+from app.services.infra.datetime_utils import to_storage_datetime
 
 class AllocationRepository(BaseRepository[Alocacao]):
     def __init__(self):

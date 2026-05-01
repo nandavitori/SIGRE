@@ -11,7 +11,7 @@ from datetime import datetime
 from dateutil.rrule import rrulestr
 
 from app.models import Alocacao
-from app.services.datetime_utils import APP_TIMEZONE_NAME, from_storage_datetime
+from app.services.infra.datetime_utils import APP_TIMEZONE_NAME, from_storage_datetime
 
 PLATFORM_EVENT_SOURCE = "alocacoes"
 

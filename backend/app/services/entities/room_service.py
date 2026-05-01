@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.room_repository import room_repository
 from app.models.room import Sala
 from app.schemas.room import RoomCreate, RoomUpdate

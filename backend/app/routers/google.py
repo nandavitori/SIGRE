@@ -9,7 +9,7 @@ from google_auth_oauthlib.flow import Flow
 from app.config import Settings, get_settings
 from app.try_database import get_db
 from app.models import GoogleCredential
-from app.services.rbac import get_current_user
+from app.services.auth.rbac import get_current_user
 
 router = APIRouter(prefix="/google", tags=["google"])
 

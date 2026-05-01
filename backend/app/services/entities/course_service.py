@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.course_repository import course_repository
 from app.models.course import Curso
 from app.schemas.course import CourseCreate, CourseUpdate

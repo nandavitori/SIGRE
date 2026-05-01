@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import os
 
-from app.services.security import hash_password
+from app.services.auth.security import hash_password
 
 revision: str = "8e9a7ae084c1"
 down_revision: Union[str, Sequence[str], None] = None

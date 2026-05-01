@@ -79,7 +79,7 @@ def test_list_my_solicitations_unauthorized(client):
 
 def test_list_my_solicitations(client, db_session):
     from app.models.user import Usuario
-    from app.services.security import hash_password, create_access_token
+    from app.services.auth.security import hash_password, create_access_token
 
     u = Usuario(
         nome="Mine User",
@@ -103,7 +103,7 @@ def test_list_my_solicitations(client, db_session):
 
 def test_update_solicitation_status(client, db_session, admin_token_headers):
     from app.models.user import Usuario
-    from app.services.security import hash_password
+    from app.services.auth.security import hash_password
 
     solic = db_session.query(Solicitacao).first()
     assert solic is not None

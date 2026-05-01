@@ -1,7 +1,7 @@
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.user_repository import user_repository
 from app.models.user import Usuario
-from app.services.security import hash_password, verify_password
+from app.services.auth.security import hash_password, verify_password
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, Any
@@ -17,7 +17,7 @@ class UserService(BaseService[Usuario]):
         
         user_data = payload.model_dump()
         if "papel" in user_data:
-            from app.services.auth_service import ROLE_MAP
+            from app.services.auth.auth_service import ROLE_MAP
             if user_data["papel"]:
                 user_data["tipo_usuario"] = ROLE_MAP.get(user_data["papel"], user_data.get("tipo_usuario", 1))
             user_data.pop("papel")
@@ -38,7 +38,7 @@ class UserService(BaseService[Usuario]):
         
         update_data = payload.model_dump(exclude_unset=True)
         if "papel" in update_data:
-            from app.services.auth_service import ROLE_MAP
+            from app.services.auth.auth_service import ROLE_MAP
             if update_data["papel"]:
                 update_data["tipo_usuario"] = ROLE_MAP.get(update_data["papel"], update_data.get("tipo_usuario"))
             update_data.pop("papel")

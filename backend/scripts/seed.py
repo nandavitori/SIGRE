@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from sqlalchemy.orm import Session
 from app.try_database import SessionLocal
 from app.models.user import Usuario
-from app.services.security import hash_password
+from app.services.auth.security import hash_password
 
 
 def seed_initial_data():

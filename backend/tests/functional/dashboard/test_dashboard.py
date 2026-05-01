@@ -1,5 +1,5 @@
 import pytest
-from app.services.security import create_access_token
+from app.services.auth.security import create_access_token
 from app.models.user import Usuario
 
 def test_get_metrics_admin(client, admin_token_headers):

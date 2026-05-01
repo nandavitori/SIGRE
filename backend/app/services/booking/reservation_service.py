@@ -13,11 +13,11 @@ from app.models import Alocacao, Sala, Usuario
 from app.models.solicitation import Solicitacao
 from app.repositories.allocation_repository import allocation_repository
 from app.builders.reservation_builder import build_local_event, expand_local_reservation, PLATFORM_EVENT_SOURCE
-from app.services import google_calendar
-from app.services.datetime_utils import ensure_utc, ensure_app_timezone, from_storage_datetime, to_storage_datetime
+from app.services.calendar import google_calendar
+from app.services.infra.datetime_utils import ensure_utc, ensure_app_timezone, from_storage_datetime, to_storage_datetime
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
-from app.services.base_service import BaseService
-from app.services.rbac import ROLE_ADMIN
+from app.services.infra.base_service import BaseService
+from app.services.auth.rbac import ROLE_ADMIN
 
 # Dias como no frontend (Segunda–Sábado); Python weekday: Segunda=0 … Domingo=6
 _DIA_SEMANA_PARA_WEEKDAY = {
@@ -93,7 +93,7 @@ class AllocationService(BaseService[Alocacao]):
         date_from = date_from or datetime(2000, 1, 1)
         date_to = date_to or datetime(2100, 1, 1)
 
-        from app.services.rbac import ROLE_ADMIN
+        from app.services.auth.rbac import ROLE_ADMIN
         is_admin = (current_user.tipo_usuario >= ROLE_ADMIN)
 
         date_from_local = to_storage_datetime(date_from)
@@ -200,7 +200,7 @@ class AllocationService(BaseService[Alocacao]):
         if not room:
             raise HTTPException(status_code=404, detail="Sala não encontrada.")
 
-        from app.services.rbac import ROLE_ADMIN
+        from app.services.auth.rbac import ROLE_ADMIN
         if current_user.tipo_usuario < ROLE_ADMIN:
             payload.status = "PENDING"
         elif not payload.status:
@@ -411,7 +411,7 @@ class AllocationService(BaseService[Alocacao]):
         if not alocacao:
             raise HTTPException(status_code=404, detail="Reserva não encontrada")
 
-        from app.services.rbac import ROLE_ADMIN
+        from app.services.auth.rbac import ROLE_ADMIN
         is_admin = int(current_user.tipo_usuario or 0) >= ROLE_ADMIN
         if not is_admin and alocacao.fk_usuario != current_user.id:
             raise HTTPException(status_code=403, detail="Sem permissão para editar esta reserva")

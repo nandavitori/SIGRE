@@ -80,7 +80,7 @@ def test_update_non_existent_user(client, admin_token_headers):
     assert response.status_code == 404
 
 def test_refuse_user(client, admin_token_headers, db_session):
-    from app.services.security import hash_password
+    from app.services.auth.security import hash_password
     other = Usuario(email="refuse@test.com", username="refuse", senha=hash_password("pwd"), tipo_usuario=1, status="pendente", nome="To Refuse")
     db_session.add(other)
     db_session.commit()

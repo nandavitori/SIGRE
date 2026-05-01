@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.try_database import get_db
 from app.schemas.reservation import ReservationCreate, ReservationUpdate, ReservationOut
-from app.services.reservation_service import allocation_service
-from app.services.rbac import require_role, ROLE_USER, ROLE_ADMIN
+from app.services.booking.reservation_service import allocation_service
+from app.services.auth.rbac import require_role, ROLE_USER, ROLE_ADMIN
 
 router = APIRouter(prefix="/reservations", tags=["reservations"])
 

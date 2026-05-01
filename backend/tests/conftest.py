@@ -56,7 +56,7 @@ def client(db_session):
     with TestClient(app) as c:
         yield c
         
-from app.services.security import create_access_token
+from app.services.auth.security import create_access_token
 
 @pytest.fixture
 def test_admin_user(db_session):
@@ -94,9 +94,9 @@ def rollback_after_test(db_session):
 @pytest.fixture(autouse=True)
 def mock_google_calendar():
     fake_creds = MagicMock()
-    with patch("app.services.google_calendar._get_credentials", return_value=fake_creds), \
-         patch("app.services.google_calendar.list_events", return_value=[]), \
-         patch("app.services.google_calendar.create_event", return_value={"id": "mock_event_id"}), \
-         patch("app.services.google_calendar.update_event", return_value={"id": "mock_event_id"}), \
-         patch("app.services.google_calendar.delete_event", return_value=True):
+    with patch("app.services.calendar.google_calendar._get_credentials", return_value=fake_creds), \
+         patch("app.services.calendar.google_calendar.list_events", return_value=[]), \
+         patch("app.services.calendar.google_calendar.create_event", return_value={"id": "mock_event_id"}), \
+         patch("app.services.calendar.google_calendar.update_event", return_value={"id": "mock_event_id"}), \
+         patch("app.services.calendar.google_calendar.delete_event", return_value=True):
         yield

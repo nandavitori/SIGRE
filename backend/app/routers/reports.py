@@ -11,12 +11,12 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.try_database import get_db
 from app.schemas.report import BaseDataReportOut, UserReportOut, HistoryReportOut
-from app.services.rbac import require_role, ROLE_ADMIN
+from app.services.auth.rbac import require_role, ROLE_ADMIN
 from app import services
 
-# Note: assuming 'report_service' is accessible via 'app.services.report_service'
+# Note: assuming 'report_service' is accessible via 'app.services.reporting.report_service'
 # or directly imported. Given the project structure:
-from app.services import report_service
+from app.services.reporting import report_service
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 

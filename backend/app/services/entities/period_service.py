@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.period_repository import period_repository
 from app.models.period import Periodo
 from app.schemas.period import PeriodCreate, PeriodUpdate

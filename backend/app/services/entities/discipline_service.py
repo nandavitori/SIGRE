@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.services.base_service import BaseService
+from app.services.infra.base_service import BaseService
 from app.repositories.discipline_repository import discipline_repository
 from app.models.discipline import Disciplina
 from app.schemas.discipline import DisciplineCreate, DisciplineUpdate
