@@ -42,7 +42,7 @@ const ScheduleList = ({ onEdit }) => {
                                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                                     <span>{h.professor}</span>
                                     <span>{h.diaSemana} • {h.horarioInicio} - {h.horarioFim}</span>
-                                    <span>{sala?.nome}</span>
+                                    <span>{sala?.nome || sala?.nomeSala || sala?.codigo_sala}</span>
                                     <span>Semestre: {h.semestre}</span>
                                     {h.dataInicio && h.dataFim && (
                                         <span className='flex items-center gap-1'>

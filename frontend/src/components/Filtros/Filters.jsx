@@ -26,7 +26,7 @@ const Filters = ({filters, setFilters, cursos, salas}) => {
             </label>
             <select className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-blue-500 focus:border-transparent cursor-pointer transition-all" value={filters.salaId} onChange={(e) => setFilters({...filters, salaId: e.target.value})}>
                 <option value="">Todas as salas</option>
-                {salas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                {salas.map(s => <option key={s.id} value={s.id}>{s.nome || s.nomeSala || s.codigo_sala}</option>)}
             </select>
         </div> */}
 

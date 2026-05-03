@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 	GOOGLE_CLIENT_SECRET: str = ""
 	GOOGLE_REDIRECT_URI: str = "http://localhost:8000/google/callback"
 	GOOGLE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
+	GOOGLE_CALENDAR_ID: str = "primary"
 	# Para onde o Google OAuth redireciona o usuário após salvar as credenciais (SPA)
 	FRONTEND_PUBLIC_URL: str = "http://localhost:8080"
 

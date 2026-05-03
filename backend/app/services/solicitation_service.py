@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.solicitation import Solicitacao
 from app.models.user import Usuario
+from app.models.room import Sala
 from app.repositories.solicitation_repository import solicitation_repository
 from app.schemas.solicitation import SolicitationCreate, SolicitationUpdateStatus
 from app.services.base_service import BaseService
@@ -62,6 +63,8 @@ class SolicitationService(BaseService[Solicitacao]):
         update_data: dict = {"status": status_new}
         if payload.motivoRecusa is not None:
             update_data["motivo_recusa"] = payload.motivoRecusa
+        if status_new == "recusado" and getattr(solicitacao, "fk_alocacao", None):
+            allocation_service.reject_reservation(db, solicitacao.fk_alocacao, admin_user)
         return self.repository.update(db, solicitacao, update_data)
 
 solicitation_service = SolicitationService()

@@ -7,7 +7,7 @@ class Sala(Base):
 
     id = Column(Integer, primary_key=True)
     sala_ativada = Column(Boolean, default=True)
-    codigo_sala = Column(Integer, unique=True)
+    codigo_sala = Column(String(50), unique=True)
     fk_tipo_sala = Column(Integer, ForeignKey("tipos_sala.id"))
     ativada = Column(Boolean, default=True)
     limite_usuarios = Column(Integer, default=0)

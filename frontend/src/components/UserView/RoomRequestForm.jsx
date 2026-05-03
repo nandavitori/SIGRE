@@ -170,14 +170,14 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                     </div>
                     <h2 className="text-2xl font-black text-gray-900 mb-2">Solicitação Enviada!</h2>
                     <p className="text-gray-500 text-sm mb-2">
-                        Sua solicitação para a <strong className="text-gray-700">{salaSelecionada?.nome || 'sala'}</strong> foi registrada.
+                        Sua solicitação para a <strong className="text-gray-700">{salaSelecionada?.nome || salaSelecionada?.nomeSala || salaSelecionada?.codigo_sala || 'sala'}</strong> foi registrada.
                     </p>
                     <p className="text-gray-400 text-xs mb-8">
                         A assessoria pedagógica analisará e entrará em contato pelo e-mail <strong>{locked?.email || ''}</strong>.
                     </p>
                     <div className="bg-gray-50 rounded-2xl p-4 mb-8 text-left space-y-2">
                         <Row label="Motivo"  value={MOTIVOS.find(m => m.value === form.motivo)?.label} />
-                        <Row label="Sala"    value={salaSelecionada?.nome} />
+                        <Row label="Sala"    value={salaSelecionada?.nome || salaSelecionada?.nomeSala || salaSelecionada?.codigo_sala} />
                         <Row label="Dia"     value={`${form.diaSemana}${form.dataEvento ? ` (${form.dataEvento.split('-').reverse().join('/')})` : ''}`} />
                         <Row label="Horário" value={`${form.horarioInicio} – ${form.horarioFim}`} />
                     </div>
@@ -306,7 +306,7 @@ const RoomRequestForm = ({ onClose, userRole, onSolicitacaoCriada }) => {
                                             <option value="">Selecione a sala desejada...</option>
                                             {salas.map(s => (
                                                 <option key={s.id} value={s.id}>
-                                                    {s.nome} — {s.tipo === 'laboratorio' ? 'Laboratório' : 'Sala de Aula'}
+                                                    {s.nome || s.nomeSala || s.codigo_sala} — {s.tipo === 'laboratorio' ? 'Laboratório' : 'Sala de Aula'}
                                                 </option>
                                             ))}
                                         </select>

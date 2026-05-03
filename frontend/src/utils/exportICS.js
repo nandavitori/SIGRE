@@ -129,11 +129,11 @@ export function generateICS(horarios, salas, cursos, calName = 'SCA UEPA — Hor
         const curso  = cursos.find(c => c.id === h.cursoId)
 
         const summary  = escapeICS(h.disciplina || 'Aula')
-        const location = escapeICS(sala?.nome || '')
+        const location = escapeICS(sala?.nome || sala?.nomeSala || sala?.codigo_sala || '')
         const desc     = escapeICS([
             h.professor  ? `Professor: ${h.professor}`   : '',
             curso        ? `Curso: ${curso.nomeCurso || curso.nome} (${curso.siglaCurso || curso.sigla})` : '',
-            sala         ? `Sala: ${sala.nome} — ${sala.tipo}`     : '',
+            sala         ? `Sala: ${sala.nome || sala.nomeSala || sala.codigo_sala} — ${sala.tipo || sala.tipoSala}`     : '',
             h.semestre   ? `Semestre: ${h.semestre}`     : '',
         ].filter(Boolean).join('\\n'))
 

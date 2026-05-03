@@ -45,7 +45,7 @@ const ExportICSModal = ({ onClose }) => {
             'SCA UEPA',
             periodo ? periodo.semestre : '',
             cursos.find(c => c.id === parseInt(filters.cursoId))?.sigla || '',
-            salas.find(s => s.id === parseInt(filters.salaId))?.nome   || '',
+            salas.find(s => s.id === parseInt(filters.salaId))?.nome || salas.find(s => s.id === parseInt(filters.salaId))?.nomeSala || salas.find(s => s.id === parseInt(filters.salaId))?.codigo_sala || '',
         ].filter(Boolean).join(' — ')
 
         const filename = [
@@ -190,7 +190,7 @@ const ExportICSModal = ({ onClose }) => {
                     <select className={inputClass} value={filters.salaId} onChange={e => set('salaId', e.target.value)}>
                         <option value="">Todas as salas</option>
                         {salas.map(s => (
-                            <option key={s.id} value={s.id}>{s.nome} — {s.tipo}</option>
+                            <option key={s.id} value={s.id}>{s.nome || s.nomeSala || s.codigo_sala} — {s.tipo || s.tipoSala}</option>
                         ))}
                     </select>
                 </div>

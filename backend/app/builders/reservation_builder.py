@@ -16,6 +16,52 @@ from app.services.datetime_utils import APP_TIMEZONE_NAME, from_storage_datetime
 PLATFORM_EVENT_SOURCE = "alocacoes"
 
 
+def build_event_summary(tipo: Optional[str], uso: Optional[str], room_label: Optional[str] = None) -> str:
+    """
+    Gera um título consistente para UI e Google Calendar.
+    """
+    event_type = (tipo or "RESERVA").strip().upper()
+    subject = (uso or "").strip() or (room_label or "").strip() or "Reserva"
+    return f"[{event_type}] {subject}"
+
+
+def build_event_description(justificativa: Optional[str]) -> str:
+    """
+    Mantém a descrição com conteúdo humano, sem serialização de metadados.
+    """
+    return (justificativa or "").strip()
+
+
+def build_event_private_metadata(reservation: Alocacao, status_override: Optional[str] = None) -> dict[str, str]:
+    """
+    Centraliza metadados usados para reconciliação entre SIGRE e Google.
+    """
+    metadata = {
+        "fk_sala": str(reservation.fk_sala),
+        "fk_usuario": str(reservation.fk_usuario),
+        "tipo": str(reservation.tipo or ""),
+        "uso": str(reservation.uso or ""),
+        "oficio": str(reservation.oficio or ""),
+        "platform_source": PLATFORM_EVENT_SOURCE,
+        "local_reservation_id": str(reservation.id),
+        "status": str((status_override or reservation.status or "PENDING")).upper(),
+    }
+
+    optional_values = {
+        "fk_professor": reservation.fk_professor,
+        "fk_disciplina": reservation.fk_disciplina,
+        "fk_curso": reservation.fk_curso,
+        "fk_periodo": reservation.fk_periodo,
+        "dia_semana": reservation.dia_semana,
+        "recurrency": reservation.recurrency,
+    }
+    for key, value in optional_values.items():
+        if value is not None and str(value).strip() != "":
+            metadata[key] = str(value)
+
+    return metadata
+
+
 def build_local_event(
     reservation: Alocacao,
     start_dt: datetime,
@@ -34,8 +80,8 @@ def build_local_event(
     """
     event_dict = {
         "id": instance_id or str(reservation.id),
-        "summary": reservation.uso or "Reservado",
-        "description": reservation.justificativa or "",
+        "summary": build_event_summary(reservation.tipo, reservation.uso),
+        "description": build_event_description(reservation.justificativa),
         "recurrence": [reservation.recurrency] if reservation.recurrency and instance_id is None else None,
         "start": {
             "dateTime": start_dt.isoformat(),
@@ -46,15 +92,7 @@ def build_local_event(
             "timeZone": APP_TIMEZONE_NAME,
         },
         "extendedProperties": {
-            "private": {
-                "fk_sala": str(reservation.fk_sala),
-                "fk_usuario": str(reservation.fk_usuario),
-                "tipo": str(reservation.tipo or ""),
-                "uso": str(reservation.uso or ""),
-                "oficio": str(reservation.oficio or ""),
-                "platform_source": PLATFORM_EVENT_SOURCE,
-                "local_reservation_id": str(reservation.id),
-            }
+            "private": build_event_private_metadata(reservation)
         },
         "status": reservation.status or "PENDING",
     }

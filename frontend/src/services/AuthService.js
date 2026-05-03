@@ -11,6 +11,15 @@ export const fetchCurrentUser = async () => {
 }
 
 /**
+ * Atualiza dados do usuário autenticado via endpoint administrativo existente.
+ * Requer permissão de administrador para edição arbitrária.
+ */
+export const updateUserById = async (userId, payload) => {
+  const res = await api.put(`/users/${userId}`, payload)
+  return res.data
+}
+
+/**
  * Sincroniza localStorage com o retorno de /users/me (fonte de verdade pós-login).
  */
 export const applyUserProfile = (me) => {

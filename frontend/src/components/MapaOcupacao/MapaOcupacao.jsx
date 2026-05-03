@@ -84,37 +84,20 @@ export default function MapaOcupacao() {
   const extrair = (r) => {
     const priv = r.extendedProperties?.private || {}
 
-    // Tenta extrair META da justificativa
-    let hiddenCursoId = '', hiddenPeriodoId = '', hiddenProfId = '', hiddenDiscId = ''
-    const rawJust = r.justificativa || r.description || priv.justificativa || ''
-    if (rawJust.includes('| META:')) {
-      try {
-        const meta = JSON.parse(rawJust.split('| META:')[1])
-        hiddenCursoId  = String(meta.cId   ?? '')
-        hiddenPeriodoId= String(meta.pId   ?? '')
-        hiddenProfId   = String(meta.profId?? '')
-        hiddenDiscId   = String(meta.dId   ?? '')
-      } catch(e){}
-    }
-
     // cursoId — cobre todos os nomes possíveis
-    const cursoId = hiddenCursoId
-      || String(r.cursoId   ?? r.curso_id   ?? r.fk_curso   ?? priv.cursoId   ?? '')
+    const cursoId = String(r.cursoId   ?? r.curso_id   ?? r.fk_curso   ?? priv.cursoId ?? priv.fk_curso ?? '')
 
     // periodoId — cobre todos os nomes possíveis
-    const periodoId = hiddenPeriodoId
-      || String(r.periodoId ?? r.periodo_id ?? r.fk_periodo ?? priv.periodoId ?? '')
+    const periodoId = String(r.periodoId ?? r.periodo_id ?? r.fk_periodo ?? priv.periodoId ?? priv.fk_periodo ?? '')
 
     // salaId
-    const salaId = String(r.salaId ?? r.sala_id ?? r.salald ?? priv.salaId ?? '')
+    const salaId = String(r.salaId ?? r.sala_id ?? r.salald ?? priv.salaId ?? priv.fk_sala ?? '')
 
     // professorId
-    const professorId = hiddenProfId
-      || String(r.professorId ?? r.professor_id ?? r.fk_professor ?? priv.professorId ?? '')
+    const professorId = String(r.professorId ?? r.professor_id ?? r.fk_professor ?? priv.professorId ?? priv.fk_professor ?? '')
 
     // disciplinaId
-    const disciplinaId = hiddenDiscId
-      || String(r.disciplinaId ?? r.disciplina_id ?? r.disciplinald ?? priv.disciplinaId ?? '')
+    const disciplinaId = String(r.disciplinaId ?? r.disciplina_id ?? r.disciplinald ?? priv.disciplinaId ?? priv.fk_disciplina ?? '')
 
     // inicio — tenta todos os campos de data
     const inicio = r.dia_horario_inicio ?? r.dataInicio ?? r.start?.dateTime ?? r.start ?? ''
@@ -176,13 +159,6 @@ export default function MapaOcupacao() {
       const fim    = montarISO(data, modal.slot.horaFim)
       const userId = localStorage.getItem('userId')
 
-      const meta = JSON.stringify({
-        cId:    filtroCursoId,
-        pId:    filtroPeriodoId,
-        profId: form.professorId,
-        dId:    form.disciplinaId
-      })
-
       const discNome = disciplinas.find(d => String(d.id || d.idDisciplina) === form.disciplinaId)?.nomeDisciplina || ''
       const profNome = professores.find(p => String(p.id || p.idProfessor) === form.professorId)?.nomeProf || ''
 
@@ -200,7 +176,7 @@ export default function MapaOcupacao() {
         dataInicio:         inicio,
         dataFim:            fim,
         uso:                discNome,
-        justificativa:      `${discNome} - ${profNome} | META:${meta}`,
+        justificativa:      profNome ? `${discNome} - ${profNome}` : discNome,
         status:             'APPROVED'
       })
 
@@ -320,7 +296,7 @@ export default function MapaOcupacao() {
               </select>
               <select value={form.salaId} onChange={e => setForm({...form, salaId: e.target.value})} className="w-full p-2.5 border rounded-xl text-sm">
                 <option value="">Selecione a Sala...</option>
-                {salas.map(s => <option key={s.id || s.idSala} value={String(s.id || s.idSala)}>{s.nomeSala}</option>)}
+                {salas.map(s => <option key={s.id || s.idSala} value={String(s.id || s.idSala)}>{s.nome || s.nomeSala || s.codigo_sala}</option>)}
               </select>
             </div>
             <div className="flex gap-3 mt-6">

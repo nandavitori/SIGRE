@@ -74,19 +74,19 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
     }
 
     const canNext = () => {
-        if (step === 1) return form.periodoId && form.diaSemana && form.horarioInicio && form.horarioFim && form.dataInicio && form.dataFim
+        if (step === 1) return form.diaSemana && form.horarioInicio && form.horarioFim && form.dataInicio && form.dataFim
         if (step === 2) return form.salaId
-        if (step === 3) return form.disciplinaId && form.cursoId
-        if (step === 4) return form.professorId
+        if (step === 3) return true // Disciplina e Curso agora são opcionais
+        if (step === 4) return true // Professor é opcional
         return true
     }
 
     const handleSubmit = () => {
         if (form.horarioInicio >= form.horarioFim) { alert('O horário de término deve ser maior que o de início.'); return }
         onSave({
-            cursoId: parseInt(form.cursoId), salaId: parseInt(form.salaId),
-            professorId: parseInt(form.professorId), disciplinaId: parseInt(form.disciplinaId),
-            periodoId: parseInt(form.periodoId), diaSemana: form.diaSemana,
+            cursoId: parseInt(form.cursoId) || null, salaId: parseInt(form.salaId),
+            professorId: parseInt(form.professorId) || null, disciplinaId: parseInt(form.disciplinaId) || null,
+            periodoId: parseInt(form.periodoId) || null, diaSemana: form.diaSemana,
             horarioInicio: form.horarioInicio, horarioFim: form.horarioFim,
             dataInicio: new Date(form.dataInicio).toISOString(),
             dataFim:    new Date(form.dataFim).toISOString(),
@@ -163,10 +163,10 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
 
                 {step === 1 && <>
                     <div>
-                        <label className={lbl}>Período letivo</label>
+                        <label className={lbl}>Período letivo (Opcional)</label>
                         <div className="flex gap-2">
                             <select className={inp} value={form.periodoId} onChange={e => handlePeriodo(e.target.value)}>
-                                <option value="">Selecione o período...</option>
+                                <option value="">Nenhum período (Evento Único/Isolado)</option>
                                 {periodos.map(p => <option key={p.id} value={p.id}>{p.semestre} — {p.descricao}</option>)}
                             </select>
                             <CadastrarBtn label="Cadastrar período" tab="periodos" />
@@ -208,55 +208,55 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
                         <div className="flex gap-2">
                             <select className={inp} value={form.salaId} onChange={e => set('salaId', e.target.value)}>
                                 <option value="">Selecione a sala...</option>
-                                {salas.map(s => <option key={s.id} value={s.id}>{s.nome} — {s.tipo}</option>)}
+                                {salas.map(s => <option key={s.id} value={s.id}>{s.nome || s.nomeSala || s.codigo_sala} — {s.tipo || s.tipoSala}</option>)}
                             </select>
                             <CadastrarBtn label="Cadastrar sala" tab="salas" />
                         </div>
                     </div>
-                    {form.salaId && getSala() && <PreviewCard icon={Building2} title={getSala().nome} subtitle={getSala().tipo} />}
+                    {form.salaId && getSala() && <PreviewCard icon={Building2} title={getSala().nome || getSala().nomeSala || getSala().codigo_sala} subtitle={getSala().tipo || getSala().tipoSala} />}
                 </>}
 
                 {step === 3 && <>
                     <div>
-                        <label className={lbl}>Disciplina</label>
+                        <label className={lbl}>Disciplina (Opcional)</label>
                         <div className="flex gap-2">
                             <select className={inp} value={form.disciplinaId} onChange={e => set('disciplinaId', e.target.value)}>
-                                <option value="">Selecione a disciplina...</option>
-                                {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
+                                <option value="">Sem disciplina vinculada...</option>
+                                {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome || d.nomeDisciplina}</option>)}
                             </select>
                             <CadastrarBtn label="Cadastrar disciplina" tab="disciplinas" />
                         </div>
                     </div>
                     <div>
-                        <label className={lbl}>Curso</label>
+                        <label className={lbl}>Curso (Opcional)</label>
                         <div className="flex gap-2">
                             <select className={inp} value={form.cursoId} onChange={e => set('cursoId', e.target.value)}>
-                                <option value="">Selecione o curso...</option>
-                                {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}{c.sigla ? ` (${c.sigla})` : ''}</option>)}
+                                <option value="">Sem curso vinculado...</option>
+                                {cursos.map(c => <option key={c.id} value={c.id}>{c.nome || c.nomeCurso}{(c.sigla || c.siglaCurso) ? ` (${c.sigla || c.siglaCurso})` : ''}</option>)}
                             </select>
                             <CadastrarBtn label="Cadastrar curso" tab="cursos" />
                         </div>
                     </div>
                     {form.cursoId && getCurso() && (
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
-                            <div className="w-4 h-4 rounded-full shrink-0" style={{ background: getCurso().cor }} />
-                            <p className="text-sm font-semibold text-gray-700">{getCurso().nome}{getCurso().sigla && <span className="text-gray-400 font-normal"> ({getCurso().sigla})</span>}</p>
+                            <div className="w-4 h-4 rounded-full shrink-0" style={{ background: getCurso().cor || getCurso().corCurso }} />
+                            <p className="text-sm font-semibold text-gray-700">{getCurso().nome || getCurso().nomeCurso}{(getCurso().sigla || getCurso().siglaCurso) && <span className="text-gray-400 font-normal"> ({getCurso().sigla || getCurso().siglaCurso})</span>}</p>
                         </div>
                     )}
                 </>}
 
                 {step === 4 && <>
                     <div>
-                        <label className={lbl}>Professor responsável</label>
+                        <label className={lbl}>Professor responsável (Opcional)</label>
                         <div className="flex gap-2">
                             <select className={inp} value={form.professorId} onChange={e => set('professorId', e.target.value)}>
-                                <option value="">Selecione o professor...</option>
-                                {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                                <option value="">Sem professor vinculado...</option>
+                                {professores.map(p => <option key={p.id} value={p.id}>{p.nome || p.nomeProf}</option>)}
                             </select>
                             <CadastrarBtn label="Cadastrar professor" tab="professores" />
                         </div>
                     </div>
-                    {form.professorId && getProfessor() && <PreviewCard icon={User} title={getProfessor().nome} subtitle={getProfessor().email} />}
+                    {form.professorId && getProfessor() && <PreviewCard icon={User} title={getProfessor().nome || getProfessor().nomeProf} subtitle={getProfessor().email || getProfessor().emailProf} />}
                 </>}
 
                 {step === 5 && (
@@ -266,10 +266,10 @@ const ScheduleForm = ({ horarioEdit, onSave, onCancel, onGoToCadastros, restoreD
                             {[
                                 { Icon: Calendar,      label: 'Período',    v: getPeriodo()?.semestre },
                                 { Icon: Clock,         label: 'Dia/Horário',v: `${form.diaSemana}, ${form.horarioInicio} – ${form.horarioFim}` },
-                                { Icon: Building2,     label: 'Sala',       v: getSala()?.nome },
-                                { Icon: BookOpen,      label: 'Disciplina', v: getDisciplina()?.nome },
-                                { Icon: GraduationCap, label: 'Curso',      v: getCurso() ? `${getCurso().nome}${getCurso().sigla ? ` (${getCurso().sigla})` : ''}` : '' },
-                                { Icon: User,          label: 'Professor',  v: getProfessor()?.nome },
+                                { Icon: Building2,     label: 'Sala',       v: getSala()?.nome || getSala()?.nomeSala || getSala()?.codigo_sala },
+                                { Icon: BookOpen,      label: 'Disciplina', v: getDisciplina()?.nome || getDisciplina()?.nomeDisciplina },
+                                { Icon: GraduationCap, label: 'Curso',      v: getCurso() ? `${getCurso().nome || getCurso().nomeCurso}${(getCurso().sigla || getCurso().siglaCurso) ? ` (${getCurso().sigla || getCurso().siglaCurso})` : ''}` : '' },
+                                { Icon: User,          label: 'Professor',  v: getProfessor()?.nome || getProfessor()?.nomeProf },
                             ].map(({ Icon, label, v }) => (
                                 <div key={label} className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors">
                                     <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">

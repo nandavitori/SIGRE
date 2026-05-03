@@ -3,7 +3,7 @@ import { useSchedule } from '../Schedule/ScheduleContext'
 import { getCalendarEvents } from '../../services/GoogleServices'
 import {
     ChevronLeft, ChevronRight, Building2, X,
-    CheckCircle2, XCircle, Clock, BookOpen, User
+    CheckCircle2, XCircle, Clock, BookOpen, User, Plus, Trash2
 } from 'lucide-react'
 
 // Mapeamento nome do dia (PT) → índice JS (0=Dom, 1=Seg...)
@@ -44,8 +44,8 @@ function dateInRange(date, dataInicio, dataFim) {
     return d >= ini && d <= fim
 }
 
-const MonthCalendar = () => {
-    const { horarios, salas, cursos } = useSchedule()
+const MonthCalendar = ({ onAddForDate, isAdmin = false }) => {
+    const { horarios, salas, cursos, removerHorario } = useSchedule()
 
     const today = new Date()
     const [viewYear,  setViewYear]  = useState(today.getFullYear())
@@ -55,11 +55,12 @@ const MonthCalendar = () => {
     const [googleEventCount, setGoogleEventCount] = useState(null)
 
     useEffect(() => {
+        if (!isAdmin) return;
         const anchor = new Date(viewYear, viewMonth, 15)
         getCalendarEvents({ view: 'month', anchor: anchor.toISOString() })
             .then((r) => setGoogleEventCount(Array.isArray(r.items) ? r.items.length : 0))
             .catch(() => setGoogleEventCount(null))
-    }, [viewYear, viewMonth])
+    }, [viewYear, viewMonth, isAdmin])
 
     // Navegar mês
     const prevMonth = () => {
@@ -170,7 +171,7 @@ const MonthCalendar = () => {
                         <option value="" className="text-gray-800 bg-white">Todas as salas</option>
                         {salas.map(s => (
                             <option key={s.id} value={s.id} className="text-gray-800 bg-white">
-                                {s.nome}
+                                {s.nome || s.nomeSala || s.codigo_sala}
                             </option>
                         ))}
                     </select>
@@ -321,10 +322,18 @@ const MonthCalendar = () => {
                                     {selectedDate.getDate()} de {MESES_PT[selectedDate.getMonth()]}
                                 </p>
                             </div>
-                            <button onClick={() => setSelectedDate(null)}
-                                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 transition-colors">
-                                <X size={14} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {onAddForDate && (
+                                    <button onClick={() => onAddForDate(selectedDate)}
+                                        className="w-7 h-7 flex items-center justify-center rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 transition-colors" title="Adicionar alocação neste dia">
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                                <button onClick={() => setSelectedDate(null)}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 transition-colors">
+                                    <X size={14} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Resumo */}
@@ -378,7 +387,7 @@ const MonthCalendar = () => {
                                         <div className="flex items-center gap-2">
                                             <Building2 size={13}
                                                 style={{ color: sala.ocupada ? '#dc2626' : '#16a34a' }} />
-                                            <span className="text-xs font-bold text-gray-700">{sala.nome}</span>
+                                            <span className="text-xs font-bold text-gray-700">{sala.nome || sala.nomeSala || sala.codigo_sala}</span>
                                             <span className="text-[9px] text-gray-400 capitalize">{sala.tipo}</span>
                                         </div>
                                         {sala.ocupada
@@ -413,12 +422,19 @@ const MonthCalendar = () => {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        {curso && (
-                                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0"
-                                                                style={{ background: curso.cor + '20', color: curso.cor }}>
-                                                                {curso.sigla}
-                                                            </span>
-                                                        )}
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            {curso && (
+                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0"
+                                                                    style={{ background: curso.cor + '20', color: curso.cor }}>
+                                                                    {curso.sigla}
+                                                                </span>
+                                                            )}
+                                                            {removerHorario && (
+                                                                <button onClick={(e) => { e.stopPropagation(); removerHorario(h.id); }} className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors mt-auto" title="Excluir alocação">
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )
                                             })}

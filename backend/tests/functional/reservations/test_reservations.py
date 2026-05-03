@@ -90,7 +90,7 @@ def test_update_reservation(client, admin_token_headers, db_session, test_admin_
         headers=admin_token_headers,
     )
     assert response.status_code == 200
-    assert response.json().get("summary") == "Atualizado"
+    assert response.json().get("summary") == "[AULA] Atualizado"
     db_session.refresh(res)
     assert res.uso == "Atualizado"
 

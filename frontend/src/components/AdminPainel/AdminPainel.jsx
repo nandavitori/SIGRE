@@ -26,7 +26,10 @@ const STATUS_STYLES = {
 }
 
 const AdminPainel = () => {
+    const { adicionarHorario, atualizarHorario } = useSchedule()
     const [showImport, setShowImport] = useState(false)
+    const [showForm, setShowForm] = useState(false)
+    const [horarioEdit, setHorarioEdit] = useState(null)
     const [activeTab, setActiveTab] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         return params.get('tab') || 'horarios';
@@ -48,20 +51,12 @@ const AdminPainel = () => {
     const handleConnectGoogle = async () => {
         setLoadingGoogle(true)
         try {
-            const { connectGoogle } = await import('../../services/api')
-            const result = await connectGoogle()
-            if (typeof result === 'string') {
-                window.location.href = result;
-            } else if (result.auth_url) {
-                window.location.href = result.auth_url;
-            } else {
-                alert("Não foi possível obter a URL de conexão.");
-            }
+            await startGoogleCalendarConnect()
         } catch (err) {
             setModalFeedback({
                 show: true,
                 title: 'Erro de Conexão',
-                message: 'Não foi possível obter a URL de conexão com o Google.',
+                message: err?.message || 'Não foi possível obter a URL de conexão com o Google.',
                 type: 'error'
             })
         } finally {
@@ -125,7 +120,7 @@ const AdminPainel = () => {
                 papel: s.papel,
                 motivo: s.motivo,
                 descricao: s.descricao,
-                sala: s.sala?.nomeSala || '',
+                sala: s.sala?.nome || s.sala?.nomeSala || s.sala?.codigo_sala || '',
                 salaId: s.salaId,
                 diaSemana: s.diaSemana,
                 dataEvento: s.dataEvento || '',
@@ -428,6 +423,9 @@ const AdminPainel = () => {
                                         <div className="flex-1">
                                             <p className="font-black text-gray-800 text-sm uppercase">{s.solicitante}</p>
                                             <p className="text-xs text-gray-400 mt-0.5">{s.sala} — {s.horario}</p>
+                                            <p className="text-[11px] text-gray-500 mt-1">
+                                                Solicitação em: <span className="font-semibold">{s.criadoEm || 'Não informado'}</span>
+                                            </p>
                                         </div>
                                         {expandedId === s.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     </button>
@@ -438,6 +436,12 @@ const AdminPainel = () => {
                                                 <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Descrição do Evento</p>
                                                 <p className="text-sm font-bold text-gray-700">{s.motivo}</p>
                                                 <p className="text-sm text-gray-600 mt-1">{s.descricao}</p>
+                                                <p className="text-xs text-gray-500 mt-3">
+                                                    Data do evento: <span className="font-semibold">{s.dataEvento || 'Não informada'}</span>
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Data da solicitação: <span className="font-semibold">{s.criadoEm || 'Não informada'}</span>
+                                                </p>
                                             </div>
                                             {s.status === 'pendente' && (
                                                 <div className="flex gap-2">
@@ -457,24 +461,38 @@ const AdminPainel = () => {
 
                 {activeTab === 'calendario' && (
                     <div className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-                            <p className="text-sm text-blue-900 font-medium">
-                                Sincronize reservas aprovadas com sua agenda Google (use credenciais reais no .env do backend).
-                            </p>
-                            <button type="button"
-                                onClick={async () => {
-                                    try {
-                                        await startGoogleCalendarConnect()
-                                    } catch (e) {
-                                        const msg = e?.response?.data?.detail ?? e?.message ?? 'Falha ao conectar'
-                                        alert(typeof msg === 'string' ? msg : 'Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no servidor.')
-                                    }
-                                }}
-                                className="shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
-                                Conectar Google Calendar
-                            </button>
-                        </div>
-                        <MonthCalendar />
+                        {!isGoogleConnected && (
+                            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                                <p className="text-sm text-blue-900 font-medium">
+                                    Sincronize reservas aprovadas com sua agenda Google (use credenciais reais no .env do backend).
+                                </p>
+                                <button type="button"
+                                    onClick={async () => {
+                                        try {
+                                            await startGoogleCalendarConnect()
+                                        } catch (e) {
+                                            const msg = e?.response?.data?.detail ?? e?.message ?? 'Falha ao conectar'
+                                            alert(typeof msg === 'string' ? msg : 'Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no servidor.')
+                                        }
+                                    }}
+                                    className="shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
+                                    Conectar Google Calendar
+                                </button>
+                            </div>
+                        )}
+                        <MonthCalendar isAdmin={true} onAddForDate={(date) => {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const localIsoDate = `${year}-${month}-${day}`;
+                            const diasMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                            setHorarioEdit({
+                                dataInicio: localIsoDate,
+                                dataFim: localIsoDate,
+                                diaSemana: diasMap[date.getDay()],
+                            });
+                            setShowForm(true);
+                        }} />
                     </div>
                 )}
                 {activeTab === 'cadastros' && <DataManager />}

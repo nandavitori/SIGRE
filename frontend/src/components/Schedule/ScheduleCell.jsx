@@ -27,7 +27,7 @@ const ScheduleCell = ({horario, curso, sala}) => {
         </span>
       </div>
       <div className="text-xs text-gray-600 font-semibold">
-        <span className='font-semibold'>{sala?.nome}</span>
+        <span className='font-semibold'>{sala?.nome || sala?.nomeSala || sala?.codigo_sala}</span>
         <span className='text-gray-400'>•</span>
         <span className='text-gray-500'>{sala?.tipo}</span>
       </div>

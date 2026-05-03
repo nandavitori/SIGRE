@@ -9,14 +9,14 @@ class ProfessorBase(BaseModel):
 class ProfessorCreate(BaseModel):
     """matriculaProf é opcional (SIAPE / matrícula funcional)."""
 
-    nomeProf: str
-    emailProf: str
-    matriculaProf: Optional[str] = None
+    nomeProf: str = Field(..., validation_alias=AliasChoices("nomeProf", "nome"))
+    emailProf: str = Field(..., validation_alias=AliasChoices("emailProf", "email"))
+    matriculaProf: Optional[str] = Field(None, validation_alias=AliasChoices("matriculaProf", "matricula"))
 
 class ProfessorUpdate(BaseModel):
-    nomeProf: Optional[str] = None
-    emailProf: Optional[str] = None
-    matriculaProf: Optional[str] = None
+    nomeProf: Optional[str] = Field(None, validation_alias=AliasChoices("nomeProf", "nome"))
+    emailProf: Optional[str] = Field(None, validation_alias=AliasChoices("emailProf", "email"))
+    matriculaProf: Optional[str] = Field(None, validation_alias=AliasChoices("matriculaProf", "matricula"))
 
 class ProfessorOut(ProfessorBase):
     id: int

@@ -7,18 +7,10 @@ import ExportICSModal from '../Calendar/ExportICSModal'
 import { Calendar, LayoutGrid, Download } from 'lucide-react'
 
 const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
-    const { cursos, salas, periodos, periodoAtivo, setPeriodoAtivo } = useSchedule()
+    const { cursos, salas } = useSchedule()
     const [filters, setFilters]       = useState({ cursoId: '', salaId: '', diaSemana: '' })
     const [viewMode, setViewMode]     = useState('grade') // 'grade' | 'calendario'
     const [showExport, setShowExport] = useState(false)
-
-    const periodoAtual = periodos.find(p => p.id === periodoAtivo)
-
-    const formatarData = (dataISO) => {
-        if (!dataISO) return ''
-        const [, mes, dia] = dataISO.split('-')
-        return `${dia}/${mes}`
-    }
 
     return (
         <div className='bg-white rounded-lg shadow-sm p-8'>
@@ -30,16 +22,6 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                     <p className='text-gray-600'>
                         Visualize os horários das aulas por curso, sala ou dia da semana
                     </p>
-                    {periodoAtual && (
-                        <div className='flex items-center gap-2 mt-3 text-sm'>
-                            <Calendar size={16} className='text-blue-600' />
-                            <span className='font-semibold text-gray-600'>
-                                Período: {formatarData(periodoAtual.dataInicio)} a {formatarData(periodoAtual.dataFim)}
-                            </span>
-                            <span className='text-gray-400'>•</span>
-                            <span className='text-gray-600'>{periodoAtual.descricao}</span>
-                        </div>
-                    )}
                 </div>
 
                 <div className='flex flex-col sm:flex-row items-end gap-3'>
@@ -55,20 +37,6 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                     </button>
                    )}
 
-                    {/* Seletor de período */}
-                    {periodos.length > 0 && (
-                        <select
-                            value={periodoAtivo}
-                            onChange={e => setPeriodoAtivo(parseInt(e.target.value))}
-                            className='px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm'
-                        >
-                            {periodos.map(periodo => (
-                                <option value={periodo.id} key={periodo.id}>
-                                    {formatarData(periodo.dataInicio)} a {formatarData(periodo.dataFim)} — {periodo.descricao}
-                                </option>
-                            ))}
-                        </select>
-                    )}
                 </div>
             </div>
 
@@ -113,13 +81,13 @@ const ScheduleViiew = ({ readOnly, isAdmin = false }) => {
                         </div>
                     </div>
                     <Filters filters={filters} setFilters={setFilters} cursos={cursos} salas={salas} />
-                    <ScheduleGridBySala filters={filters} periodoAtivo={periodoAtivo} />
+                    <ScheduleGridBySala filters={filters} />
                 </>
             )}
 
             {/* ── View: Calendário ── */}
             {viewMode === 'calendario' && (
-                <MonthCalendar />
+                <MonthCalendar isAdmin={isAdmin} />
             )}
 
             {/* ── Modal de exportação .ics ── */}

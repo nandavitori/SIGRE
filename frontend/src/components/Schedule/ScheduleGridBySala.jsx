@@ -4,7 +4,7 @@ import { diasSemana, horariosLivres as horariosPadrao } from '../../data/data'
 import { Building2 } from 'lucide-react'
 import ScheduleCell from './ScheduleCell'
 
-const ScheduleGridBySala = ({filters, periodoAtivo}) => {
+const ScheduleGridBySala = ({filters}) => {
     const {horarios, cursos, salas} = useSchedule()
     
 
@@ -22,7 +22,6 @@ const ScheduleGridBySala = ({filters, periodoAtivo}) => {
         if(salaAtual && h.salaId !== salaAtual.id) return false
         if(filters.cursoId && h.cursoId !== parseInt(filters.cursoId)) return false
         if(filters.diaSemana && h.diaSemana !== filters.diaSemana) return false
-        if(periodoAtivo && h.periodoId !== periodoAtivo) return false
         return true
     })
 
@@ -50,7 +49,7 @@ const ScheduleGridBySala = ({filters, periodoAtivo}) => {
                     >
                         <Building2 size={18} />
                         <div className='text-left'>
-                            <div className='text-sm'>{sala.nome}</div>
+                            <div className='text-sm'>{sala.nome || sala.nomeSala || sala.codigo_sala}</div>
                             <div className='text-xs opacity-80'>
                                 {sala.tipo}
                             </div>
@@ -63,7 +62,7 @@ const ScheduleGridBySala = ({filters, periodoAtivo}) => {
             <div className='mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200'>
                 <div className='flex justify-between items-start gap-4'>
                     <div className='flex-1'>
-                        <h3 className='font-bold text-blue-900 text-lg mb-1'>{salaAtual.nome}</h3>
+                        <h3 className='font-bold text-blue-900 text-lg mb-1'>{salaAtual.nome || salaAtual.nomeSala || salaAtual.codigo_sala}</h3>
                         <p className='text-sm text-blue-700'>
                             {horariosDaSala.length} horário(s) ocupado(s) nesta sala
                         </p>

@@ -8,7 +8,7 @@ class Alocacao(Base):
     id = Column(Integer, primary_key=True)
     fk_usuario = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     fk_sala = Column(Integer, ForeignKey("salas.id"), nullable=False)
-    fk_professor = Column(Integer, ForeignKey("professores.id"), nullable=True)
+    fk_professor = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     fk_disciplina = Column(Integer, ForeignKey("disciplinas.id"), nullable=True)
     fk_curso = Column(Integer, ForeignKey("cursos.id"), nullable=True)
     fk_periodo = Column(Integer, ForeignKey("periodos.id"), nullable=True)
@@ -30,9 +30,9 @@ class Alocacao(Base):
     google_event_id = Column(String(255), nullable=True)
 
     # Relacionamentos
-    usuario = relationship("Usuario")
+    usuario = relationship("Usuario", foreign_keys=[fk_usuario])
     sala = relationship("Sala")
-    professor = relationship("Professor")
+    professor = relationship("Usuario", foreign_keys=[fk_professor])
     disciplina = relationship("Disciplina")
     curso = relationship("Curso")
     periodo = relationship("Periodo")

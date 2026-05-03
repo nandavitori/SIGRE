@@ -382,7 +382,7 @@ const DataManager = ({ onReturnToHorarios }) => {
                                             )}
                                             <div className="min-w-0">
                                                 <p className="text-sm font-semibold text-gray-800 truncate">
-                                                    {item[cfg.labelKey] || item.semestre || 'Sem nome'}
+                                                    {item[cfg.labelKey] || item.nome || item.semestre || 'Sem nome'}
                                                 </p>
                                                 {item.email    && <p className="text-xs text-gray-400 truncate">{item.email}</p>}
                                                 {hiddenSigla   && <p className="text-xs text-gray-400">{hiddenSigla}</p>}

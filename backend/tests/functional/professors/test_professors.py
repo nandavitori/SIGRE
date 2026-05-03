@@ -1,5 +1,5 @@
 import pytest
-from app.models.professor import Professor
+from app.models.user import Usuario
 
 def test_create_professor_admin(client, admin_token_headers, db_session):
     payload = {
@@ -53,31 +53,31 @@ def test_list_professors_unauthorized(client):
 
 def test_update_professor(client, admin_token_headers, db_session):
     # Search for the professor in the DB (model uses snake_case 'email')
-    prof = db_session.query(Professor).filter(Professor.email == "prof@test.com").first()
+    prof = db_session.query(Usuario).filter(Usuario.email == "prof@test.com", Usuario.tipo_usuario == 2).first()
     payload = {"nomeProf": "Professor Teste Atualizado"}
     response = client.put(f"/professors/{prof.id}", json=payload, headers=admin_token_headers)
     assert response.status_code == 200
     assert response.json()["nomeProf"] == "Professor Teste Atualizado"
 
 def test_update_professor_unauthorized(client, db_session):
-    prof = db_session.query(Professor).first()
+    prof = db_session.query(Usuario).filter(Usuario.tipo_usuario == 2).first()
     if not prof:
-        prof = Professor(nome="Temp", email="temp_prof@test.com", matricula="T1")
+        prof = Usuario(nome="Temp", email="temp_prof@test.com", matricula="T1", tipo_usuario=2, senha="123")
         db_session.add(prof)
         db_session.commit()
     response = client.put(f"/professors/{prof.id}", json={"nomeProf": "Hacked"})
     assert response.status_code == 401
 
 def test_delete_professor(client, admin_token_headers, db_session):
-    prof = db_session.query(Professor).filter(Professor.email == "prof@test.com").first()
+    prof = db_session.query(Usuario).filter(Usuario.email == "prof@test.com", Usuario.tipo_usuario == 2).first()
     response = client.delete(f"/professors/{prof.id}", headers=admin_token_headers)
     assert response.status_code == 204
-    assert db_session.query(Professor).filter(Professor.id == prof.id).first() is None
+    assert db_session.query(Usuario).filter(Usuario.id == prof.id, Usuario.tipo_usuario == 2).first() is None
 
 def test_delete_professor_unauthorized(client, db_session):
-    prof = db_session.query(Professor).first()
+    prof = db_session.query(Usuario).filter(Usuario.tipo_usuario == 2).first()
     if not prof:
-        prof = Professor(nome="Temp D", email="temp_d_prof@test.com", matricula="TD1")
+        prof = Usuario(nome="Temp D", email="temp_d_prof@test.com", matricula="TD1", tipo_usuario=2, senha="123")
         db_session.add(prof)
         db_session.commit()
         db_session.refresh(prof)

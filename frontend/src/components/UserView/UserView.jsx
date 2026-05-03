@@ -56,7 +56,7 @@ const UserView = ({ userRole, onLogOut }) => {
         motivo:   s.motivo,
         descricao: s.descricao,
         observacoes: s.observacoes,
-        sala:     s.sala?.nomeSala || '',
+        sala:     s.sala?.nome || s.sala?.nomeSala || s.sala?.codigo_sala || '',
         diaSemana: s.diaSemana,
         data:     s.dataEvento || '',
         horario:  `${s.horarioInicio} – ${s.horarioFim}`,

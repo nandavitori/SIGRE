@@ -12,7 +12,14 @@ from fastapi import HTTPException, status
 from app.models import Alocacao, Sala, Usuario
 from app.models.solicitation import Solicitacao
 from app.repositories.allocation_repository import allocation_repository
-from app.builders.reservation_builder import build_local_event, expand_local_reservation, PLATFORM_EVENT_SOURCE
+from app.builders.reservation_builder import (
+    build_local_event,
+    expand_local_reservation,
+    PLATFORM_EVENT_SOURCE,
+    build_event_summary,
+    build_event_description,
+    build_event_private_metadata,
+)
 from app.services import google_calendar
 from app.services.datetime_utils import ensure_utc, ensure_app_timezone, from_storage_datetime, to_storage_datetime
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
@@ -218,26 +225,22 @@ class AllocationService(BaseService[Alocacao]):
         if self._conflicts_google(db, current_user.id, alocacao.fk_sala, start_dt, end_dt):
             raise HTTPException(status_code=409, detail="Conflito detectado no Google Calendar.")
 
-        extended_props = {
-            "fk_sala": str(alocacao.fk_sala),
-            "fk_usuario": str(alocacao.fk_usuario),
-            "tipo": alocacao.tipo,
-            "uso": alocacao.uso or "",
-            "platform_source": PLATFORM_EVENT_SOURCE,
-            "local_reservation_id": str(alocacao.id),
-            "status": "APPROVED",
-        }
-        if alocacao.recurrency:
-            extended_props["recurrency"] = alocacao.recurrency
+        room_label = room.codigo_sala or str(room.id)
+        extended_props = build_event_private_metadata(alocacao, status_override="APPROVED")
 
         applicant = db.query(Usuario).filter(Usuario.id == alocacao.fk_usuario).first()
         attendees = [applicant.email] if applicant and applicant.email else []
 
+        if alocacao.fk_professor:
+            professor = db.query(Usuario).filter(Usuario.id == alocacao.fk_professor).first()
+            if professor and professor.email and professor.email not in attendees:
+                attendees.append(professor.email)
+
         created = google_calendar.create_event(
             db=db,
             user_id=current_user.id,
-            summary=f"[{alocacao.tipo}] {alocacao.uso or f'Reserva Sala {room.codigo_sala or room.id}'}",
-            description=alocacao.justificativa,
+            summary=build_event_summary(alocacao.tipo, alocacao.uso, f"Reserva Sala {room_label}"),
+            description=build_event_description(alocacao.justificativa),
             start_dt_utc=start_dt,
             end_dt_utc=end_dt,
             location=room.descricao_sala,
@@ -252,28 +255,25 @@ class AllocationService(BaseService[Alocacao]):
             )
         return str(created["id"])
 
-    def _sync_google_delete(self, db: Session, alocacao: Alocacao, current_user):
+    def _sync_google_delete_if_exists(self, db: Session, alocacao: Alocacao, current_user) -> None:
         """
-        Busca o evento no Google Calendar pelo ID local e o remove.
+        Remove o evento no Google quando existir vínculo local.
         """
-        start_dt = ensure_utc(alocacao.dia_horario_inicio)
-        end_dt = ensure_utc(alocacao.dia_horario_saida)
-        
-        events = list_events(db, current_user.id, start_dt, end_dt)
-        if not events:
+        if not alocacao.google_event_id:
             return
-
-        for ev in events:
-            priv = (ev.get("extendedProperties") or {}).get("private") or {}
-            if str(priv.get("local_reservation_id")) == str(alocacao.id):
-                delete_event(db, current_user.id, ev["id"])
-                print(f"DEBUG: Evento Google {ev['id']} removido para alocação {alocacao.id}")
+        self._require_google_credentials(db, current_user.id)
+        ok = google_calendar.delete_event(db=db, user_id=current_user.id, event_id=alocacao.google_event_id)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Não foi possível remover o evento correspondente no Google Calendar.",
+            )
 
     def approve_reservation(self, db: Session, reservation_id: int, current_user) -> dict:
         alocacao = self.repository.get_by_id(db, reservation_id)
         if not alocacao:
             raise HTTPException(status_code=404, detail="Reserva não encontrada.")
-        if alocacao.status == "APPROVED":
+        if alocacao.status == "APPROVED" and alocacao.google_event_id:
             return {"message": "Reserva já está aprovada."}
 
         room = db.query(Sala).filter(Sala.id == alocacao.fk_sala).first()
@@ -281,10 +281,13 @@ class AllocationService(BaseService[Alocacao]):
         self.repository.update(db, alocacao, {"google_event_id": eid, "status": "APPROVED"})
         return {"message": "Reserva aprovada e sincronizada."}
 
-    def reject_reservation(self, db: Session, reservation_id: int) -> dict:
+    def reject_reservation(self, db: Session, reservation_id: int, current_user=None) -> dict:
         alocacao = self.repository.get_by_id(db, reservation_id)
         if not alocacao:
             raise HTTPException(status_code=404, detail="Reserva não encontrada.")
+        if current_user and alocacao.google_event_id:
+            self._sync_google_delete_if_exists(db, alocacao, current_user)
+            self.repository.update(db, alocacao, {"google_event_id": None})
         self.repository.update_status(db, alocacao, "REJECTED")
         return {"message": "Reserva rejeitada."}
 
@@ -294,12 +297,25 @@ class AllocationService(BaseService[Alocacao]):
         self._require_google_credentials(db, current_user.id)
         start_dt = ensure_utc(from_storage_datetime(alocacao.dia_horario_inicio))
         end_dt = ensure_utc(from_storage_datetime(alocacao.dia_horario_saida))
+        room_label = room.codigo_sala or str(room.id)
         patch: dict = {
-            "summary": f"[{alocacao.tipo}] {alocacao.uso or f'Reserva Sala {room.codigo_sala or room.id}'}",
-            "description": alocacao.justificativa or "",
+            "summary": build_event_summary(alocacao.tipo, alocacao.uso, f"Reserva Sala {room_label}"),
+            "description": build_event_description(alocacao.justificativa),
             "start": {"dateTime": start_dt.isoformat(), "timeZone": "UTC"},
             "end": {"dateTime": end_dt.isoformat(), "timeZone": "UTC"},
+            "extendedProperties": {"private": build_event_private_metadata(alocacao)},
         }
+        
+        applicant = db.query(Usuario).filter(Usuario.id == alocacao.fk_usuario).first()
+        attendees = [applicant.email] if applicant and applicant.email else []
+
+        if alocacao.fk_professor:
+            professor = db.query(Usuario).filter(Usuario.id == alocacao.fk_professor).first()
+            if professor and professor.email and professor.email not in attendees:
+                attendees.append(professor.email)
+                
+        patch["attendees"] = [{"email": email} for email in attendees]
+
         if room.descricao_sala:
             patch["location"] = room.descricao_sala
         updated = google_calendar.update_event(
@@ -312,23 +328,46 @@ class AllocationService(BaseService[Alocacao]):
             )
 
     def delete_reservation(self, db: Session, reservation_id: str, delete_series: bool, current_user) -> None:
-        base_id_str = reservation_id.split(":")[0]
+        parts = reservation_id.split(":")
+        base_id_str = parts[0]
         if not base_id_str.isdigit():
             return
         lid = int(base_id_str)
         alocacao = self.repository.get_by_id(db, lid)
         if not alocacao:
             return
+
+        if not delete_series and len(parts) > 1 and alocacao.recurrency:
+            date_str = parts[1]  # e.g. '2026-05-15T08:00:00'
+            
+            # Format local EXDATE (dateutil parses it without Z if it's local)
+            dt_formatted_local = date_str.replace("-", "").replace(":", "")
+            if "EXDATE" not in alocacao.recurrency:
+                alocacao.recurrency += f"\nEXDATE:{dt_formatted_local}"
+            else:
+                alocacao.recurrency += f",{dt_formatted_local}"
+            
+            self.repository.update(db, alocacao, {"recurrency": alocacao.recurrency})
+
+            # Delete single instance in Google Calendar
+            if alocacao.status == "APPROVED" and alocacao.google_event_id:
+                try:
+                    from app.services.datetime_utils import ensure_app_timezone, ensure_utc
+                    from datetime import datetime
+                    
+                    local_dt = ensure_app_timezone(datetime.fromisoformat(date_str))
+                    utc_dt = ensure_utc(local_dt)
+                    utc_formatted = utc_dt.strftime("%Y%m%dT%H%M%SZ")
+                    instance_google_id = f"{alocacao.google_event_id}_{utc_formatted}"
+                    
+                    self._require_google_credentials(db, current_user.id)
+                    google_calendar.delete_event(db=db, user_id=current_user.id, event_id=instance_google_id)
+                except Exception as e:
+                    print(f"Failed to delete single instance in Google Calendar: {e}")
+            return
+
         if alocacao.status == "APPROVED" and alocacao.google_event_id:
-            self._require_google_credentials(db, current_user.id)
-            ok = google_calendar.delete_event(
-                db=db, user_id=current_user.id, event_id=alocacao.google_event_id
-            )
-            if not ok:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Não foi possível remover o evento correspondente no Google Calendar.",
-                )
+            self._sync_google_delete_if_exists(db, alocacao, current_user)
         self.repository.delete(db, lid)
 
     def update_reservation(
@@ -364,7 +403,8 @@ class AllocationService(BaseService[Alocacao]):
         prev_status = (alocacao.status or "").upper()
         updated = self.repository.update(db, alocacao, update_data)
         room = db.query(Sala).filter(Sala.id == updated.fk_sala).first()
-        if room and (updated.status or "").upper() == "APPROVED":
+        updated_status = (updated.status or "").upper()
+        if room and updated_status == "APPROVED":
             if updated.google_event_id:
                 self._sync_google_update(db, updated, current_user, room)
             else:
@@ -375,6 +415,9 @@ class AllocationService(BaseService[Alocacao]):
                     if prev_status != "APPROVED":
                         self.repository.update(db, updated, {"status": alocacao.status})
                     raise
+        elif updated.google_event_id and updated_status != "APPROVED":
+            self._sync_google_delete_if_exists(db, updated, current_user)
+            updated = self.repository.update(db, updated, {"google_event_id": None})
 
         start_dt = from_storage_datetime(updated.dia_horario_inicio)
         end_dt = from_storage_datetime(updated.dia_horario_saida)
