@@ -39,7 +39,7 @@ def update_user(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.id != user_id and not (current_user.tipo_usuario == ROLE_ADMIN):
+    if current_user.id != user_id and not (current_user.tipo_usuario >= ROLE_ADMIN):
          raise HTTPException(status_code=403, detail="Sem permissão")
          
     return user_service.update_user(db, user_id, payload)

@@ -18,7 +18,13 @@ class RoomService(BaseService[Sala]):
             "ativada": True,
             "sala_ativada": True
         }
-        return self.repository.create(db, db_data)
+        try:
+            return self.repository.create(db, db_data)
+        except Exception as e:
+            if "UNIQUE constraint failed" in str(e) or "Duplicate" in str(e) or "UniqueViolation" in str(e) or "duplicate key value" in str(e):
+                from fastapi import HTTPException
+                raise HTTPException(status_code=409, detail="Sala com este código já existe")
+            raise e
 
     def update(self, db: Session, id: int, data: RoomUpdate) -> Optional[Sala]:
         db_obj = self.repository.get_by_id(db, id)

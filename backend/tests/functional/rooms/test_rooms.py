@@ -10,9 +10,16 @@ def test_list_rooms_invalid_token(client):
     response = client.get("/rooms/", headers={"Authorization": "Bearer invalid"})
     assert response.status_code == 401
     
-def test_create_room(client, admin_token_headers):
+def test_create_room(client, admin_token_headers, db_session):
+    room_type = db_session.query(TipoSala).first()
+    if not room_type:
+        room_type = TipoSala(nome="Lab")
+        db_session.add(room_type)
+        db_session.commit()
+        db_session.refresh(room_type)
     payload = {
         "nomeSala": "101",
+        "tipoSalaId": room_type.id,
         "descricao_sala": "Laboratório de Redes",
         "capacidade": 30
     }
@@ -31,9 +38,11 @@ def test_create_room_unauthorized(client):
     response = client.post("/rooms/", json=payload)
     assert response.status_code == 401
 
-def test_create_room_duplicate_code(client, admin_token_headers):
+def test_create_room_duplicate_code(client, admin_token_headers, db_session):
+    room_type = db_session.query(TipoSala).first()
     payload = {
         "nomeSala": "501",
+        "tipoSalaId": room_type.id,
         "descricao_sala": "Room 501",
         "capacidade": 30
     }

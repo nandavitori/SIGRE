@@ -31,7 +31,7 @@ def test_create_user_admin(client, admin_token_headers, db_session):
         "nome": "New Staff",
         "email": "staff@test.com",
         "username": "staff1",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 2, 
         "papel": "professor"
     }
@@ -67,16 +67,16 @@ def test_update_user(client, admin_token_headers, db_session):
     payload = {
         "nome": "Updated Staff Name"
     }
-    response = client.put(f"/users/{user.id}", json=payload, headers=admin_token_headers)
+    response = client.patch(f"/users/{user.id}", json=payload, headers=admin_token_headers)
     assert response.status_code == 200
     assert response.json()["nome"] == "Updated Staff Name"
 
 def test_update_user_unauthorized(client):
-    response = client.put("/users/1", json={"nome": "Hacked"})
+    response = client.patch("/users/1", json={"nome": "Hacked"})
     assert response.status_code == 401
 
 def test_update_non_existent_user(client, admin_token_headers):
-    response = client.put("/users/99999", json={"nome": "Non-existent"}, headers=admin_token_headers)
+    response = client.patch("/users/99999", json={"nome": "Non-existent"}, headers=admin_token_headers)
     assert response.status_code == 404
 
 def test_refuse_user(client, admin_token_headers, db_session):

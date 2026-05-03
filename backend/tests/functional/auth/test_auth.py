@@ -8,7 +8,7 @@ def test_register_user(client, db_session):
         "nome": "Test User",
         "email": "testuser@example.com",
         "username": "testuser1",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 1 # aluno
     }
     
@@ -29,7 +29,7 @@ def test_register_duplicate_email(client, db_session):
         "nome": "Another Test",
         "email": "testuser@example.com", # Duplicate
         "username": "anothertest",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 1
     }
     
@@ -42,7 +42,7 @@ def test_register_duplicate_username(client, db_session):
         "nome": "Another Test",
         "email": "different_email@example.com",
         "username": "testuser1", # Duplicate
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 1
     }
     
@@ -65,7 +65,7 @@ def test_login_success(client, db_session):
         "nome": "Login Test User",
         "email": "logintest@example.com",
         "username": "logintest1",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 1 # aluno
     }
     client.post("/auth/register", json=payload)
@@ -77,7 +77,7 @@ def test_login_success(client, db_session):
     
     login_data = {
         "username": "logintest@example.com", 
-        "senha": "password123"
+        "senha": "StrongP@ssw0rd!!"
     }
     
     response = client.post("/auth/login", json=login_data)
@@ -92,7 +92,7 @@ def test_login_success_by_email(client, db_session):
     # Already covered by test_login_success, but let's test specifically by username if it was used for email
     login_data = {
         "username": "logintest1", 
-        "senha": "password123"
+        "senha": "StrongP@ssw0rd!!"
     }
     response = client.post("/auth/login", json=login_data)
     assert response.status_code == 200
@@ -104,7 +104,7 @@ def test_login_invalid_credentials(client, db_session):
         "nome": "Invalid Login Test User",
         "email": "invalidlogintest@example.com",
         "username": "invalidlogintest1",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "tipo_usuario": 1
     }
     client.post("/auth/register", json=payload)
@@ -121,7 +121,7 @@ def test_login_invalid_credentials(client, db_session):
 def test_login_non_existent_user(client):
     login_data = {
         "username": "nonexistent@test.com",
-        "senha": "password123"
+        "senha": "StrongP@ssw0rd!!"
     }
     response = client.post("/auth/login", json=login_data)
     assert response.status_code == 401
@@ -132,7 +132,7 @@ def test_login_unapproved_user(client, db_session):
     pending_user = Usuario(
         email="pending@test.com",
         username="pending_test",
-        senha=hash_password("password123"),
+        senha=hash_password("StrongP@ssw0rd!!"),
         tipo_usuario=2, # Professor
         status="pendente",
         nome="Pending User"
@@ -142,7 +142,7 @@ def test_login_unapproved_user(client, db_session):
     
     login_data = {
         "username": "pending@test.com",
-        "senha": "password123"
+        "senha": "StrongP@ssw0rd!!"
     }
     response = client.post("/auth/login", json=login_data)
     assert response.status_code == 403
@@ -152,7 +152,7 @@ def test_login_token_standard_endpoint(client, db_session):
     # Test OAuth2 /token endpoint
     form_data = {
         "username": "logintest@example.com",
-        "password": "password123"
+        "password": "StrongP@ssw0rd!!"
     }
     response = client.post("/auth/token", data=form_data)
     assert response.status_code == 200

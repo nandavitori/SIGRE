@@ -15,7 +15,7 @@ def test_room_type_persistence(client, admin_token_headers, db_session):
     
     # 2. Create room with that type ID
     payload = {
-        "nomeSala": 2001,
+        "nomeSala": "2001",
         "tipoSalaId": room_type.id,
         "descricao_sala": "Saves Persistence Test",
         "capacidade": 50
@@ -30,7 +30,7 @@ def test_room_type_persistence(client, admin_token_headers, db_session):
     assert data["tipoSala"] == room_type.nome
     
     # Check Database
-    db_room = db_session.query(Sala).filter(Sala.codigo_sala == 2001).first()
+    db_room = db_session.query(Sala).filter(Sala.codigo_sala == "2001").first()
     assert db_room is not None
     assert db_room.fk_tipo_sala == room_type.id
     
@@ -62,7 +62,7 @@ def test_course_persistence(client, admin_token_headers, db_session):
         "nome": "User Persistence Test",
         "email": "persist@test.com",
         "username": "persist_user",
-        "senha": "password123",
+        "senha": "StrongP@ssw0rd!!",
         "cursoId": course.id,
         "papel": "aluno"
     }
@@ -86,7 +86,7 @@ def test_course_persistence(client, admin_token_headers, db_session):
     db_session.refresh(new_course)
     
     update_payload = {"cursoId": new_course.id}
-    update_response = client.put(f"/users/{db_user.id}", json=update_payload, headers=admin_token_headers)
+    update_response = client.patch(f"/users/{db_user.id}", json=update_payload, headers=admin_token_headers)
     assert update_response.status_code == 200
     assert update_response.json()["cursoId"] == new_course.id
     

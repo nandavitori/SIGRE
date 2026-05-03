@@ -21,7 +21,7 @@ def test_calendar_events_month(_mock_list, client, admin_token_headers):
 def test_calendar_events_google_not_connected(_mock_list, client, admin_token_headers):
     r = client.get("/calendar/events", headers=admin_token_headers)
     assert r.status_code == 400
-    assert "credentials" in (r.json().get("detail") or "").lower()
+    assert "credenciais" in (r.json().get("detail") or "").lower()
 
 
 @patch("app.routers.calendar.list_events", return_value=[])
