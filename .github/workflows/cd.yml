@@ -17,14 +17,16 @@ jobs:
     name: Backend — push image & update ECS
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.SIGRE_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
       - uses: aws-actions/amazon-ecr-login@v2
@@ -64,7 +66,6 @@ jobs:
             --task-definition "$NEW_TASK_DEF_ARN"
 
       - name: Wait for deployment to stabilize
-        continue-on-error: true
         run: |
           aws ecs wait services-stable \
             --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
@@ -74,6 +75,9 @@ jobs:
     name: Frontend — sync S3 & invalidate CloudFront
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -94,8 +98,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.SIGRE_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
       - name: Sync to S3
