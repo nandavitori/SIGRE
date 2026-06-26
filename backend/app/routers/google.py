@@ -11,6 +11,8 @@ from app.try_database import get_db
 from app.models import GoogleCredential
 from app.services.auth.rbac import get_current_user
 
+import requests
+
 router = APIRouter(prefix="/google", tags=["google"])
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
@@ -42,8 +44,8 @@ def google_connect(
     flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
     
     auth_url, state = flow.authorization_url(
-        prompt="consent", 
-        access_type="offline", 
+        prompt="consent",
+        access_type="offline",
         include_granted_scopes="true"
     )
     
@@ -105,8 +107,7 @@ def google_callback(
         db.add(row)
         
     row.access_token = creds.token
-    if getattr(creds, "refresh_token", None):
-        row.refresh_token = creds.refresh_token
+    row.refresh_token = creds.refresh_token or row.refresh_token  
         
     row.client_id = settings.GOOGLE_CLIENT_ID
     row.client_secret = settings.GOOGLE_CLIENT_SECRET
@@ -130,9 +131,9 @@ def google_status(db: Session = Depends(get_db), current=Depends(get_current_use
 
 @router.delete("/disconnect")
 def google_disconnect(db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """
-    Remove a conexão com o Google Calendar do usuário.
-    """
+    row = db.query(GoogleCredential).filter(GoogleCredential.user_id == current.id).first()
+    if row and row.access_token:
+        requests.post("https://oauth2.googleapis.com/revoke", params={"token": row.access_token})
     db.query(GoogleCredential).filter(GoogleCredential.user_id == current.id).delete()
     db.commit()
     return {"status": "Disconnected successfully"}
